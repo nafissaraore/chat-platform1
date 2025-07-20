@@ -1,0 +1,96 @@
+/* frontend/src/pages/HomePage.css */
+
+.homepage-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+  color: white;
+  text-align: center;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+  margin: 20px auto;
+  max-width: 90%;
+  box-sizing: border-box;
+}
+
+.homepage-title {
+  font-size: 48px; /* Equivalent to text-5xl */
+  margin-bottom: 20px;
+  font-weight: bold;
+  letter-spacing: 1px;
+}
+
+@media (min-width: 768px) { /* md breakpoint */
+  .homepage-title {
+    font-size: 60px; /* Equivalent to md:text-6xl */
+  }
+}
+
+.homepage-subtitle {
+  font-size: 40px; /* Equivalent to text-4xl */
+  font-weight: bold;
+  margin-bottom: 32px;
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+}
+
+@media (min-width: 768px) { /* md breakpoint */
+  .homepage-subtitle {
+    font-size: 48px; /* Equivalent to md:text-5xl */
+  }
+}
+
+.homepage-description {
+  font-size: 18px; /* Equivalent to text-lg */
+  line-height: 1.6;
+  max-width: 800px; /* Equivalent to max-w-2xl */
+  margin-bottom: 40px;
+}
+
+@media (min-width: 768px) { /* md breakpoint */
+  .homepage-description {
+    font-size: 20px; /* Equivalent to md:text-xl */
+  }
+}
+
+.homepage-animation {
+  max-width: 320px; /* Equivalent to max-w-xs */
+  height: auto;
+  margin-bottom: 40px;
+}
+
+@media (min-width: 768px) { /* md breakpoint */
+  .homepage-animation {
+    max-width: 384px; /* Equivalent to md:max-w-sm */
+  }
+}
+
+@media (min-width: 1024px) { /* lg breakpoint */
+  .homepage-animation {
+    max-width: 448px; /* Equivalent to lg:max-w-md */
+  }
+}
+
+.homepage-cta-button {
+  display: inline-block;
+  padding: 16px 32px; /* Equivalent to px-8 py-4 */
+  background-color: white;
+  color: #6a11cb;
+  text-decoration: none;
+  border-radius: 9999px; /* Equivalent to rounded-full */
+  font-size: 20px; /* Equivalent to text-xl */
+  font-weight: bold;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1); /* Equivalent to shadow-lg */
+  transition: all 0.3s ease;
+  transform: scale(1);
+  border: none;
+  cursor: pointer;
+}
+
+.homepage-cta-button:hover {
+  background-color: #f3f4f6; /* Equivalent to hover:bg-gray-100 */
+  transform: scale(1.05); /* Equivalent to hover:scale-105 */
+}

@@ -1,0 +1,131 @@
+/* frontend/src/pages/UserList.css */
+
+/* Les messages de chargement et d'erreur restent inchangés */
+.user-list-loading-message {
+  text-align: center;
+  margin-top: 48px;
+  color: #6b7280;
+}
+
+.user-list-error-message {
+  text-align: center;
+  margin-top: 48px;
+  color: #dc2626;
+}
+
+.user-list-container {
+  /* Garde la hauteur fixe à 100vh pour la page entière */
+  height: 90vh;
+  /* Utilise flexbox pour organiser le contenu verticalement */
+  display: flex;
+  flex-direction: column;
+  /* Centre le conteneur horizontalement */
+  max-width: 960px;
+  margin: 0 auto; /* Pas de marge haute/basse, la hauteur 100vh gère ça */
+  padding: 24px; /* Garde le padding intérieur */
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e5e7eb;
+  /* Retire overflow: auto de ici, car seul le grid doit défiler */
+}
+
+/* Assure que html et body prennent toute la hauteur */
+body, html {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+}
+
+.user-list-title {
+  font-size: 24px;
+  font-weight: 700;
+  text-align: center;
+  margin-bottom: 24px;
+  color: #1f2937;
+  /* Empêche le titre de rétrécir, il prendra toujours sa hauteur complète */
+  flex-shrink: 0;
+}
+
+.user-list-no-users-text {
+  text-align: center;
+  color: #6b7280;
+  /* Empêche ce texte de rétrécir */
+  flex-shrink: 0;
+  margin-bottom: 24px; /* Ajoutez un peu d'espace si nécessaire */
+}
+
+.user-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 24px;
+  /* Permet à la grille de prendre tout l'espace vertical disponible */
+  flex-grow: 1;
+  /* !!! C'est ici qu'on gère le défilement pour la grille !!! */
+  overflow-y: auto; /* Active le défilement vertical pour la grille si nécessaire */
+  padding-right: 10px; /* Ajoute un peu de padding pour éviter que le scrollbar ne colle aux cartes */
+}
+
+/* Le reste de votre CSS pour les cartes utilisateurs reste inchangé */
+.user-card {
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 20px;
+  background-color: white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  text-align: center;
+  transition: box-shadow 0.2s ease-in-out;
+}
+
+.user-card:hover {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.user-card-avatar {
+  border-radius: 50%;
+  margin-bottom: 12px;
+  border: 2px solid #60a5fa;
+  width: 60px;
+  height: 60px;
+}
+
+.user-card-username {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 4px;
+}
+
+.user-card-email {
+  font-size: 14px;
+  color: #4b5563;
+  margin-bottom: 4px;
+}
+
+.user-card-role {
+  font-size: 12px;
+  color: #6b7280;
+  margin-bottom: 12px;
+}
+
+.user-card-message-button {
+  margin-top: auto;
+  display: block;
+  width: 100%;
+  padding: 8px 16px;
+  background-color: #4b5563;
+  color: white;
+  font-weight: 600;
+  border-radius: 8px;
+  text-align: center;
+  text-decoration: none;
+  transition: background-color 0.2s ease-in-out;
+}
+
+.user-card-message-button:hover {
+  background-color: #374151;
+}

@@ -1,0 +1,39 @@
+/* frontend/src/components/MainLayout.css */
+
+.main-layout-container {
+    display: flex;
+    min-height: 100vh;
+    width: 100%;
+}
+
+.main-content-area {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    background-color: #ffffff;
+    border-left: 1px solid #e5e7eb; /* Bordure pour séparer le contenu principal de la sidebar */
+}
+
+/* Styles pour la navigation d'authentification (si non authentifié) */
+.auth-nav {
+    display: flex;
+    justify-content: center;
+    padding: 15px 0;
+    background-color: #ffffff;
+    border-bottom: 1px solid #e5e7eb;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.auth-nav-link {
+    text-decoration: none;
+    color: #3b82f6; /* Bleu */
+    font-weight: 600;
+    padding: 10px 20px;
+    border-radius: 8px;
+    transition: background-color 0.2s ease-in-out;
+}
+
+.auth-nav-link:hover {
+    background-color: #e0f2fe; /* Bleu très clair au survol */
+}
+

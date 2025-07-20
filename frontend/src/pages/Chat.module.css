@@ -1,0 +1,359 @@
+/* frontend/src/pages/Chat.module.css */
+
+/* Conteneur principal du chat */
+.chatContainer {
+    display: flex;
+    flex-direction: column;
+    height: 100vh; /* Prend toute la hauteur de la fenêtre */
+    background-color: #f0f2f5; /* Fond clair général */
+    font-family: 'Inter', sans-serif;
+    overflow: hidden; /* Empêche le débordement */
+}
+
+/* En-tête du chat (nom de l'interlocuteur, icônes d'appel) */
+.chatHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 15px 20px;
+    background-color: #ffffff;
+    border-bottom: 1px solid #e0e0e0;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+    flex-shrink: 0; /* Empêche l'en-tête de rétrécir */
+}
+
+.chatHeaderInfo {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.chatHeaderAvatar {
+    width: 45px;
+    height: 45px;
+    background-color: #3b82f6; /* Couleur de l'avatar */
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 600;
+    font-size: 1.2em;
+    flex-shrink: 0;
+}
+
+.chatHeaderUsername {
+    font-weight: 600;
+    color: #333;
+    font-size: 1.1em;
+}
+
+.chatHeaderIcons {
+    display: flex;
+    gap: 15px;
+}
+
+.chatHeaderIcon {
+    width: 24px;
+    height: 24px;
+    color: #666;
+    cursor: pointer;
+    transition: color 0.2s ease;
+}
+
+.chatHeaderIcon:hover {
+    color: #007bff;
+}
+
+/* Conteneur des messages */
+.messagesContainer {
+    flex-grow: 1; /* Prend l'espace disponible */
+    overflow-y: auto; /* Permet le défilement des messages */
+    padding: 20px;
+    background-color: #f0f2f5; /* Fond léger pour la zone de messages */
+    display: flex;
+    flex-direction: column;
+    gap: 10px; /* Espace entre les bulles de message */
+}
+
+.noMessages {
+    text-align: center;
+    color: #888;
+    padding: 20px;
+    font-style: italic;
+}
+
+/* Séparateur de date */
+.dateSeparator {
+    text-align: center;
+    margin: 20px 0;
+    font-size: 0.85em;
+    color: #888;
+    position: relative;
+}
+
+.dateSeparator::before,
+.dateSeparator::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    width: 40%;
+    height: 1px;
+    background-color: #e0e0e0;
+}
+
+.dateSeparator::before {
+    left: 0;
+}
+
+.dateSeparator::after {
+    right: 0;
+}
+
+/* Bulles de message */
+.messageBubble {
+    padding: 10px 15px;
+    border-radius: 20px; /* Bords très arrondis */
+    max-width: 70%; /* Limite la largeur des bulles */
+    word-break: break-word;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start; /* Par défaut pour les messages reçus */
+}
+
+.messageBubble.sent {
+    background-color: #007bff; /* Bleu pour les messages envoyés */
+    color: white;
+    margin-left: auto; /* Aligne à droite */
+    margin-right: 0;
+    align-items: flex-end; /* Aligne le contenu à droite pour les messages envoyés */
+}
+
+.messageBubble.received {
+    background-color: #e0e0e0; /* Gris clair pour les messages reçus */
+    color: #333;
+    margin-left: 0;
+    margin-right: auto; /* Aligne à gauche */
+}
+
+.messageBubble.system {
+    background-color: #fffbe6;
+    color: #8a6d3b;
+    text-align: center;
+    margin-left: auto;
+    margin-right: auto;
+    font-style: italic;
+    font-size: 0.9em;
+    max-width: 90%;
+    border-radius: 10px; /* Moins arrondi pour les messages système */
+}
+
+.messageSender {
+    font-weight: 600;
+    margin-bottom: 3px;
+    font-size: 0.9em;
+    display: block;
+}
+
+.messageBubble.sent .messageSender {
+    color: rgba(255, 255, 255, 0.8); /* Texte plus clair pour le nom de l'expéditeur dans les bulles bleues */
+}
+
+.messageBubble.received .messageSender {
+    color: #555;
+}
+
+.messageContent {
+    font-size: 1em;
+    margin-top: 5px;
+}
+
+/* Images dans les messages */
+.messageContent img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+    margin-top: 5px;
+    display: block; /* Pour éviter les espaces sous l'image */
+}
+
+.messageTimestamp {
+    font-size: 0.7em; /* Très petite taille pour l'horodatage */
+    color: #888;
+    margin-top: 5px;
+    align-self: flex-end; /* Aligne le timestamp à droite dans la bulle */
+    /* Pour les messages envoyés, la couleur doit contraster avec le bleu */
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.messageBubble.received .messageTimestamp {
+    align-self: flex-end; /* Aligne le timestamp à droite dans la bulle reçue aussi */
+    color: #666;
+}
+
+
+/* Zone de saisie du message */
+.messageInputArea {
+    display: flex;
+    align-items: center;
+    padding: 15px 20px;
+    background-color: #ffffff;
+    border-top: 1px solid #e0e0e0;
+    box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.05);
+    gap: 10px; /* Espace entre les éléments de la zone de saisie */
+    flex-shrink: 0;
+}
+
+.inputIcons {
+    display: flex;
+    gap: 10px;
+}
+
+.inputIcon {
+    width: 24px;
+    height: 24px;
+    color: #666;
+    cursor: pointer;
+    transition: color 0.2s ease;
+}
+
+.inputIcon:hover {
+    color: #007bff;
+}
+
+.messageForm {
+    flex-grow: 1;
+    display: flex;
+    gap: 10px;
+}
+
+.messageInput {
+    flex-grow: 1;
+    padding: 12px 20px;
+    border-radius: 25px; /* Très arrondi */
+    border: 1px solid #ced4da;
+    font-size: 1em;
+    transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.messageInput:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+.sendButton {
+    padding: 12px 25px;
+    background-color: #28a745; /* Vert pour envoyer */
+    color: white;
+    border: none;
+    border-radius: 25px;
+    cursor: pointer;
+    font-size: 1em;
+    font-weight: 600;
+    transition: background-color 0.2s ease-in-out, transform 0.1s ease-in-out;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px; /* Espace entre le texte et l'icône si vous en ajoutez un */
+}
+
+.sendButton:hover {
+    background-color: #218838;
+    transform: translateY(-1px);
+}
+
+.sendButton:active {
+    transform: translateY(0);
+}
+
+/* Lien de retour */
+.backLinkContainer {
+    padding: 10px 20px;
+    background-color: #ffffff;
+    border-top: 1px solid #e0e0e0;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+.backLink {
+    color: #007bff;
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.backLink:hover {
+    text-decoration: underline;
+}
+
+/* Styles pour le prompt de mot de passe (salles privées) */
+.passwordPromptContainer {
+    max-width: 400px;
+    margin: 50px auto;
+    padding: 30px;
+    border: 1px solid #e0e0e0;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+    background-color: #ffffff;
+    text-align: center;
+    font-family: 'Inter', sans-serif;
+}
+
+.passwordPromptTitle {
+    font-size: 1.8em;
+    color: #2c3e50;
+    margin-bottom: 15px;
+}
+
+.passwordPromptText {
+    color: #555;
+    margin-bottom: 20px;
+}
+
+.passwordInput {
+    width: calc(100% - 30px); /* Ajustement pour le padding */
+    padding: 12px 15px;
+    border-radius: 8px;
+    border: 1px solid #ced4da;
+    font-size: 1em;
+    margin-bottom: 20px;
+    box-sizing: border-box;
+}
+
+.passwordInput:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+.passwordSubmitButton {
+    width: 100%;
+    padding: 12px 25px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 1.1em;
+    font-weight: 600;
+    transition: background-color 0.2s ease-in-out;
+}
+
+.passwordSubmitButton:hover {
+    background-color: #0056b3;
+}
+
+.passwordError {
+    color: #dc3545;
+    margin-top: 10px;
+}
+
+/* Message de chargement */
+.loadingMessage {
+    text-align: center;
+    margin-top: 50px;
+    font-size: 1.2em;
+    color: #555;
+}

@@ -1,0 +1,6 @@
+/* frontend/src/components/ProtectedRoute.css */
+.protected-route-loading {
+  text-align: center;
+  margin-top: 48px;
+  color: #6b7280;
+}

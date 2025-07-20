@@ -1,0 +1,81 @@
+/* frontend/src/App.css */
+
+/* Styles généraux de l'application */
+.app-container {
+    display: flex;
+    min-height: 100vh;
+    font-family: Arial, sans-serif;
+    background-color: #f0f2f5; /* Couleur de fond claire */
+}
+
+.main-content-area {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    background-color: #ffffff;
+    border-left: 1px solid #e5e7eb; /* Bordure pour séparer le contenu principal de la sidebar */
+}
+
+/* Styles pour la navigation d'authentification (si non authentifié) */
+.auth-nav {
+    display: flex;
+    justify-content: center;
+    padding: 15px 0;
+    background-color: #ffffff;
+    border-bottom: 1px solid #e5e7eb;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.auth-nav-link {
+    text-decoration: none;
+    color: #3b82f6; /* Bleu */
+    font-weight: 600;
+    padding: 10px 20px;
+    border-radius: 8px;
+    transition: background-color 0.2s ease-in-out;
+}
+
+.auth-nav-link:hover {
+    background-color: #e0f2fe; /* Bleu très clair au survol */
+}
+
+/* Styles du spinner de chargement global */
+.loading-container {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background-color: #f0f2f5;
+}
+
+.loading-spinner {
+    border: 4px solid rgba(0, 0, 0, 0.1);
+    border-left-color: #3b82f6; /* Bleu */
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    animation: spin 1s linear infinite;
+}
+
+.loading-text {
+    margin-top: 16px;
+    font-size: 16px;
+    color: #6b7280; /* Gris foncé */
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .app-container {
+        flex-direction: column;
+    }
+
+    .main-content-area {
+        border-left: none;
+    }
+}

@@ -1,0 +1,371 @@
+/* src/pages/ProfileEditPage.css */
+
+.profile-edit-container {
+    height: 100vh; /* Utilisez 'height' au lieu de 'min-height' pour fixer la hauteur à 100% de la vue */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    padding: 20px;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    overflow: auto; /* Permet au conteneur principal de défiler si la carte est plus grande que la vue */
+}
+
+.profile-edit-card {
+    max-width: 600px;
+    width: 100%;
+    background: white;
+    border-radius: 20px;
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
+    /* overflow: hidden;  Supprimez cette ligne ou changez-la si vous voulez le défilement */
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    animation: fadeInUp 0.6s ease-out;
+    display: flex; /* Utilisez flexbox pour organiser le contenu à l'intérieur */
+    flex-direction: column; /* Empilez les éléments verticalement */
+    max-height: calc(100vh - 40px); /* Limite la hauteur de la carte pour laisser de la place au padding */
+}
+
+.profile-edit-card h2 {
+    font-size: 32px;
+    font-weight: 700;
+    text-align: center;
+    margin: 0;
+    padding: 40px 40px 30px 40px;
+    color: #1a202c;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    position: relative;
+    flex-shrink: 0; /* Empêche le titre de rétrécir */
+}
+
+.profile-edit-card h2::after {
+    content: '';
+    position: absolute;
+    bottom: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 60px;
+    height: 4px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 2px;
+}
+
+.profile-edit-form {
+    padding: 0 40px 40px 40px;
+    display: grid;
+    gap: 24px;
+    overflow-y: auto; /* Ajoute une barre de défilement verticale si le contenu dépasse */
+    flex-grow: 1; /* Permet au formulaire de prendre l'espace disponible */
+}
+
+/* Le reste de votre CSS reste inchangé */
+/* ... */
+
+.form-group {
+    position: relative;
+}
+
+.form-group label {
+    display: block;
+    color: #2d3748;
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.form-group input[type="text"],
+.form-group input[type="email"],
+.form-group input[type="password"],
+.form-group input[type="number"],
+.form-group textarea {
+    width: 100%;
+    padding: 16px 20px;
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    font-size: 16px;
+    color: #2d3748;
+    background: #f7fafc;
+    transition: all 0.3s ease;
+    outline: none;
+    box-sizing: border-box;
+    font-family: inherit;
+}
+
+.form-group textarea {
+    min-height: 100px;
+    resize: vertical;
+    line-height: 1.5;
+}
+
+.form-group input:focus,
+.form-group textarea:focus {
+    border-color: #667eea;
+    background: white;
+    box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+    transform: translateY(-2px);
+}
+
+.form-group input:hover,
+.form-group textarea:hover {
+    border-color: #cbd5e0;
+}
+
+/* Styles pour l'upload de fichier */
+.form-group input[type="file"] {
+    width: 100%;
+    padding: 12px 16px;
+    border: 2px dashed #cbd5e0;
+    border-radius: 12px;
+    background: #f7fafc;
+    color: #4a5568;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-sizing: border-box;
+}
+
+.form-group input[type="file"]:hover {
+    border-color: #667eea;
+    background: #edf2f7;
+}
+
+.form-group input[type="file"]:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+    outline: none;
+}
+
+/* Grille pour les champs courts */
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+/* Aperçu des images */
+.profile-image-preview {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 4px solid #e2e8f0;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+    margin-top: 15px;
+}
+
+.profile-image-preview:hover {
+    transform: scale(1.05);
+    box-shadow: 0 12px 35px rgba(0, 0, 0, 0.15);
+}
+
+.image-preview-container {
+    text-align: center;
+    margin-top: 15px;
+}
+
+.image-preview-container p {
+    margin: 10px 0 15px 0;
+    color: #4a5568;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.save-profile-btn {
+    width: 100%;
+    padding: 18px 24px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    font-weight: 600;
+    font-size: 16px;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-top: 20px;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+    position: relative;
+    overflow: hidden;
+}
+
+.save-profile-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s;
+}
+
+.save-profile-btn:hover::before {
+    left: 100%;
+}
+
+.save-profile-btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.6);
+}
+
+.save-profile-btn:active {
+    transform: translateY(0);
+}
+
+.save-profile-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* Messages de succès et d'erreur */
+.success-message {
+    background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+    color: white;
+    padding: 16px 20px;
+    border-radius: 12px;
+    margin-top: 20px;
+    text-align: center;
+    font-weight: 600;
+    box-shadow: 0 4px 15px rgba(34, 197, 94, 0.3);
+    animation: slideInDown 0.5s ease-out;
+}
+
+.error-message {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    color: white;
+    padding: 16px 20px;
+    border-radius: 12px;
+    margin-top: 20px;
+    text-align: center;
+    font-weight: 600;
+    box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);
+    animation: slideInDown 0.5s ease-out;
+}
+
+/* États de chargement */
+.profile-edit-container.loading,
+.profile-edit-container.error {
+    font-size: 20px;
+    color: white;
+    text-align: center;
+    font-weight: 600;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    padding: 40px;
+    border-radius: 16px;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+}
+
+.profile-edit-container.error {
+    background: rgba(239, 68, 68, 0.1);
+}
+
+/* Animation du bouton de chargement */
+.save-profile-btn.loading {
+    color: transparent;
+}
+
+.save-profile-btn.loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 20px;
+    height: 20px;
+    border: 2px solid transparent;
+    border-top: 2px solid white;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    transform: translate(-50%, -50%);
+}
+
+/* Animations */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes slideInDown {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes spin {
+    0% { transform: translate(-50%, -50%) rotate(0deg); }
+    100% { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .profile-edit-container {
+        padding: 10px;
+    }
+    
+    .profile-edit-card {
+        max-width: 100%;
+        border-radius: 16px;
+    }
+    
+    .profile-edit-card h2 {
+        font-size: 28px;
+        padding: 30px 30px 25px 30px;
+    }
+    
+    .profile-edit-form {
+        padding: 0 30px 30px 30px;
+        gap: 20px;
+    }
+    
+    .form-row {
+        grid-template-columns: 1fr;
+        gap: 20px;
+    }
+    
+    .form-group input,
+    .form-group textarea {
+        padding: 14px 16px;
+        font-size: 16px; /* Évite le zoom sur iOS */
+    }
+    
+    .profile-image-preview {
+        width: 100px;
+        height: 100px;
+    }
+}
+
+/* Effets de parallax subtils */
+.profile-edit-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, #667eea, #764ba2, transparent);
+    animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}

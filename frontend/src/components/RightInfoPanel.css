@@ -1,0 +1,306 @@
+/* RightInfoPanel.css */
+.right-info-panel {
+  width: 300px;
+  background: #f8f9fa;
+  border-left: 1px solid #e9ecef;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow-y: auto;
+  position: relative;
+}
+
+.panel-header {
+  background: white;
+  padding: 15px;
+  border-bottom: 1px solid #e9ecef;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.contact-actions,
+.room-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.action-btn {
+  background: none;
+  border: none;
+  padding: 8px;
+  border-radius: 50%;
+  cursor: pointer;
+  color: #6c757d;
+  transition: all 0.2s;
+}
+
+.action-btn:hover {
+  background: #e9ecef;
+  color: #495057;
+}
+
+/* Profil du contact */
+.contact-profile,
+.room-profile {
+  background: white;
+  padding: 20px;
+  text-align: center;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.profile-avatar-large,
+.room-avatar-large {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  margin: 0 auto 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.profile-avatar-large img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.avatar-initial-large {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(45deg, #007bff, #0056b3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32px;
+  font-weight: bold;
+  color: white;
+  border-radius: 50%;
+}
+
+.room-avatar-large {
+  background: linear-gradient(45deg, #28a745, #20c997);
+  color: white;
+  font-size: 32px;
+  font-weight: bold;
+}
+
+.contact-name,
+.room-name {
+  font-size: 20px;
+  font-weight: 600;
+  margin: 0 0 8px 0;
+  color: #212529;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.private-badge {
+  font-size: 14px;
+}
+
+.contact-status {
+  color: #6c757d;
+  font-size: 14px;
+  margin: 0;
+}
+
+.room-description {
+  color: #6c757d;
+  font-size: 14px;
+  margin: 0;
+  font-style: italic;
+}
+
+/* Sections d'informations */
+.profile-info,
+.room-info {
+  flex: 1;
+  padding: 0;
+}
+
+.info-section {
+  background: white;
+  margin-bottom: 8px;
+  padding: 15px;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #495057;
+  margin: 0 0 12px 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.info-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+
+.info-item:last-child {
+  margin-bottom: 0;
+}
+
+.info-label {
+  font-weight: 500;
+  color: #6c757d;
+  min-width: 60px;
+}
+
+.info-value {
+  color: #212529;
+  flex: 1;
+}
+
+.interests-text,
+.intention-text {
+  color: #212529;
+  font-size: 14px;
+  line-height: 1.4;
+  margin: 0;
+}
+
+/* Médias partagés */
+.shared-media-section,
+.shared-files-section {
+  background: white;
+  padding: 15px;
+  margin-bottom: 8px;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.media-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.media-item {
+  aspect-ratio: 1;
+  border-radius: 8px;
+  overflow: hidden;
+  position: relative;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.media-item:hover {
+  transform: scale(1.05);
+}
+
+.media-thumbnail {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.more-media {
+  background: #e9ecef;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 600;
+  color: #6c757d;
+}
+
+.loading-media {
+  text-align: center;
+  color: #6c757d;
+  font-size: 14px;
+  margin-top: 10px;
+}
+
+/* Fichiers partagés */
+.files-list {
+  margin-top: 10px;
+}
+
+.file-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  margin-bottom: 4px;
+  background: #f8f9fa;
+  border-radius: 6px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.file-item:hover {
+  background: #e9ecef;
+}
+
+.file-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.more-files {
+  background: #e9ecef;
+  color: #6c757d;
+  font-weight: 500;
+  justify-content: center;
+}
+
+/* État vide */
+.default-content {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.empty-state {
+  text-align: center;
+  color: #6c757d;
+}
+
+.empty-state svg {
+  margin-bottom: 15px;
+  opacity: 0.5;
+}
+
+.empty-state p {
+  font-size: 14px;
+  margin: 0;
+}
+/* Scrollbar personnalisée */
+.right-info-panel::-webkit-scrollbar {
+  width: 6px;
+}
+
+.right-info-panel::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+.right-info-panel::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+.right-info-panel::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
