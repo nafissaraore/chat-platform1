@@ -2,31 +2,28 @@
 const mysql = require('mysql2/promise');
 
 const pool = mysql.createPool({
-    host: process.env.DB_HOST || '91.204.209.25',  // ❌ Vous aviez '3306' ici !
-    port: process.env.DB_PORT || 3306,        // ✅ Ajout du port
+    host: process.env.DB_HOST || '91.204.209.25', // ✅ IP cPanel
+    port: process.env.DB_PORT || 3306,
     user: process.env.DB_USER || 'pgroupeb_traorenafissa',
     password: process.env.DB_PASSWORD || 'Miss@traore',
     database: process.env.DB_NAME || 'pgroupeb_chat_platform',
     waitForConnections: true,
     connectionLimit: 10,
     queueLimit: 0,
-    // ✅ Ajout pour les connexions externes (cPanel)
-    
+    // ❌ Supprimer ou commenter la ligne suivante si ton serveur ne supporte pas SSL :
+    // ssl: { rejectUnauthorized: false }
 });
 
 async function testConnection() {
     try {
         const connection = await pool.getConnection();
-        console.log('Connexion à la base de données MySQL réussie !');
+        console.log('✅ Connexion à la base de données réussie !');
         connection.release();
     } catch (error) {
-        console.error('Erreur de connexion à la base de données MySQL :', error.message);
-        // ❌ Retirez process.exit(1) pour Vercel
-        // process.exit(1);
+        console.error('❌ Erreur de connexion à la base de données :', error.message);
     }
 }
 
-// ✅ Appelez seulement en développement
 if (process.env.NODE_ENV !== 'production') {
     testConnection();
 }
