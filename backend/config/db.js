@@ -2,7 +2,7 @@
 const mysql = require('mysql2/promise');
 
 const pool = mysql.createPool({
-    host: process.env.DB_HOST || 'localhost',  // ❌ Vous aviez '3306' ici !
+    host: process.env.DB_HOST || '91.204.209.25',  // ❌ Vous aviez '3306' ici !
     port: process.env.DB_PORT || 3306,        // ✅ Ajout du port
     user: process.env.DB_USER || 'pgroupeb_traorenafissa',
     password: process.env.DB_PASSWORD || 'Miss@traore',
