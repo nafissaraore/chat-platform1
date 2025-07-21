@@ -11,9 +11,7 @@ const pool = mysql.createPool({
     connectionLimit: 10,
     queueLimit: 0,
     // ✅ Ajout pour les connexions externes (cPanel)
-    ssl: {
-        rejectUnauthorized: false
-    }
+    
 });
 
 async function testConnection() {
