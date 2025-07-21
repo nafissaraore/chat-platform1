@@ -1,7 +1,7 @@
 // frontend/src/utils/socket.js
 import { io } from 'socket.io-client';
 
-const SOCKET_SERVER_URL = 'http://localhost:5000';
+const SOCKET_SERVER_URL = 'https://chat-back-td5r.onrender.com';
 
 const socket = io(SOCKET_SERVER_URL, {
     transports: ['websocket', 'polling']
