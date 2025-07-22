@@ -2,7 +2,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-baseURL: 'https://p6-groupeb.com/nafinode/chat_platform/api',
+baseURL: 'https://chat-back-td5r.onrender.com/api',
 });
 
 // Intercepteur pour ajouter le token et gérer les headers
