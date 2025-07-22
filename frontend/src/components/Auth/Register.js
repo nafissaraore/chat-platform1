@@ -4,68 +4,32 @@ import api from '../../utils/api';
 import './Auth.css';
 
 function Register() {
-    const [formData, setFormData] = useState({
-        username: '',
-        email: '',
-        password: '',
-        confirmPassword: ''
-    });
+    const [username, setUsername] = useState('');
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
 
-    const handleChange = (e) => {
-        setFormData({
-            ...formData,
-            [e.target.name]: e.target.value
-        });
-    };
-
     const handleRegister = async (e) => {
         e.preventDefault();
         setError('');
-        
-        // Validation côté client
-        if (formData.password !== formData.confirmPassword) {
-            setError('Les mots de passe ne correspondent pas');
-            return;
-        }
-
-        if (formData.password.length < 6) {
-            setError('Le mot de passe doit contenir au moins 6 caractères');
-            return;
-        }
-
-        if (formData.username.length === 0) {
-            setError('Le nom d\'utilisateur est requis');
-            return;
-        }
-        
         setLoading(true);
         
         try {
-            const response = await api.post('/auth/register', {
-                username: formData.username,
-                email: formData.email,
-                password: formData.password
-            });
+            await api.post('/auth/register', { username, email, password });
             
-            // Connexion automatique après inscription
-            localStorage.setItem('token', response.data.token);
-            localStorage.setItem('user', JSON.stringify(response.data.user));
-            
+            // Petit délai pour l'UX
             setTimeout(() => {
-                navigate('/dashboard');
+                navigate('/login', { 
+                    state: { 
+                        message: 'Inscription réussie ! Vous pouvez maintenant vous connecter.' 
+                    } 
+                });
             }, 500);
         } catch (err) {
             console.error('Erreur d\'inscription:', err);
-            if (err.response?.data?.message) {
-                setError(err.response.data.message);
-            } else if (err.response?.status === 400) {
-                setError('Données invalides. Vérifiez vos informations.');
-            } else {
-                setError('Échec de l\'inscription. Veuillez réessayer.');
-            }
+            setError(err.response?.data?.message || 'Échec de l\'inscription. Veuillez réessayer.');
         } finally {
             setLoading(false);
         }
@@ -81,13 +45,10 @@ function Register() {
                         <input
                             type="text"
                             id="username"
-                            name="username"
                             className="auth-input"
-                            value={formData.username}
-                            onChange={handleChange}
-                            placeholder="jeandupont123"
-                            minLength={1}
-                            maxLength={255}
+                            value={username}
+                            onChange={(e) => setUsername(e.target.value)}
+                            placeholder="Votre nom d'utilisateur"
                             required
                         />
                     </div>
@@ -97,11 +58,10 @@ function Register() {
                         <input
                             type="email"
                             id="email"
-                            name="email"
                             className="auth-input"
-                            value={formData.email}
-                            onChange={handleChange}
-                            placeholder="jean.dupont@email.com"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            placeholder="votre@email.com"
                             required
                         />
                     </div>
@@ -111,27 +71,10 @@ function Register() {
                         <input
                             type="password"
                             id="password"
-                            name="password"
                             className="auth-input"
-                            value={formData.password}
-                            onChange={handleChange}
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
                             placeholder="••••••••"
-                            minLength={6}
-                            required
-                        />
-                    </div>
-                    
-                    <div className="auth-form-group">
-                        <label htmlFor="confirmPassword" className="auth-label">Confirmer le mot de passe</label>
-                        <input
-                            type="password"
-                            id="confirmPassword"
-                            name="confirmPassword"
-                            className="auth-input"
-                            value={formData.confirmPassword}
-                            onChange={handleChange}
-                            placeholder="••••••••"
-                            minLength={6}
                             required
                         />
                     </div>
