@@ -9,15 +9,40 @@ function Register() {
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
+    const [success, setSuccess] = useState(false);
     const navigate = useNavigate();
+
+    const validateForm = () => {
+        if (username.length < 3) {
+            setError('Le nom d\'utilisateur doit contenir au moins 3 caractères');
+            return false;
+        }
+        if (password.length < 6) {
+            setError('Le mot de passe doit contenir au moins 6 caractères');
+            return false;
+        }
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            setError('Veuillez entrer une adresse email valide');
+            return false;
+        }
+        return true;
+    };
 
     const handleRegister = async (e) => {
         e.preventDefault();
         setError('');
+        setSuccess(false);
+        
+        if (!validateForm()) {
+            return;
+        }
+        
         setLoading(true);
         
         try {
             await api.post('/auth/register', { username, email, password });
+            setSuccess(true);
             
             // Petit délai pour l'UX
             setTimeout(() => {
@@ -26,10 +51,34 @@ function Register() {
                         message: 'Inscription réussie ! Vous pouvez maintenant vous connecter.' 
                     } 
                 });
-            }, 500);
+            }, 1000);
         } catch (err) {
             console.error('Erreur d\'inscription:', err);
-            setError(err.response?.data?.message || 'Échec de l\'inscription. Veuillez réessayer.');
+            
+            if (err.response) {
+                // Erreur de réponse du serveur
+                const status = err.response.status;
+                const message = err.response.data?.message;
+                
+                switch (status) {
+                    case 400:
+                        setError(message || 'Données invalides. Vérifiez vos informations.');
+                        break;
+                    case 409:
+                        setError('Cet email ou nom d\'utilisateur existe déjà.');
+                        break;
+                    case 500:
+                        setError('Erreur serveur. Veuillez réessayer plus tard.');
+                        break;
+                    default:
+                        setError(message || 'Erreur inattendue. Veuillez réessayer.');
+                }
+            } else if (err.request) {
+                // Erreur réseau
+                setError('Problème de connexion. Vérifiez votre réseau.');
+            } else {
+                setError('Erreur inattendue. Veuillez réessayer.');
+            }
         } finally {
             setLoading(false);
         }
@@ -50,6 +99,7 @@ function Register() {
                             onChange={(e) => setUsername(e.target.value)}
                             placeholder="Votre nom d'utilisateur"
                             required
+                            minLength="3"
                         />
                     </div>
                     
@@ -76,17 +126,19 @@ function Register() {
                             onChange={(e) => setPassword(e.target.value)}
                             placeholder="••••••••"
                             required
+                            minLength="6"
                         />
                     </div>
                     
                     {error && <p className="auth-error-message">{error}</p>}
+                    {success && <p className="auth-success-message">Inscription réussie ! Redirection...</p>}
                     
                     <button 
                         type="submit" 
-                        className={`auth-button ${loading ? 'loading' : ''}`}
-                        disabled={loading}
+                        className={`auth-button ${loading ? 'loading' : ''} ${success ? 'success' : ''}`}
+                        disabled={loading || success}
                     >
-                        {loading ? 'Inscription en cours...' : 'S\'inscrire'}
+                        {loading ? 'Inscription en cours...' : success ? 'Inscription réussie ✓' : 'S\'inscrire'}
                     </button>
                 </form>
                 
