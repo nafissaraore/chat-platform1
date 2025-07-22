@@ -44,10 +44,7 @@ const io = new Server(server, {
   }
 });
 
-const allowedOrigins = [
-  'https://chat-platform1-7hfh.vercel.app',
-  'http://localhost:3000'
-];
+
 
 app.use(cors({
   origin: function (origin, callback) {
