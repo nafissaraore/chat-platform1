@@ -4,7 +4,10 @@ console.log("SERVEUR BACKEND DÉMARRÉ - FICHIER server.js EN COURS D'EXÉCUTION
 console.log("----------------------------------------------------");
 
 require('dotenv').config();
-
+const allowedOrigins = [
+  'https://chat-platform1-7hfh.vercel.app',
+  'http://localhost:3000'
+];
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
@@ -35,10 +38,10 @@ const app = express();
 const server = http.createServer(app);
 
 const io = new Server(server, {
-    cors: {
-        origin: process.env.FRONTEND_URL || "http://localhost:3000",
-        methods: ["GET", "POST"]
-    }
+  cors: {
+    origin: allowedOrigins,
+    methods: ['GET', 'POST']
+  }
 });
 
 const allowedOrigins = [
