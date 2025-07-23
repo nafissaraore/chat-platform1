@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import useAuth from '../../hooks/useAuth';
 import api from '../../utils/api';
 import './Auth.css';
 
@@ -10,9 +9,6 @@ function Login() {
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
-    
-    // ✅ Utiliser les fonctions du hook useAuth
-    const { login } = useAuth();
 
     const handleLogin = async (e) => {
         e.preventDefault();
@@ -21,15 +17,11 @@ function Login() {
         
         try {
             const response = await api.post('/auth/login', { email, password });
+            localStorage.setItem('token', response.data.token);
+            localStorage.setItem('user', JSON.stringify(response.data.user));
             
-            // ✅ Utiliser la fonction login du hook au lieu de manipuler localStorage directement
-            login(response.data.user, response.data.token);
-            
-            console.log('✅ Connexion réussie:', response.data.user);
-            
-            // ✅ Navigation immédiate, le hook s'occupera de la synchronisation
+            // Navigation immédiate sans délai artificiel
             navigate('/dashboard');
-            
         } catch (err) {
             console.error('Erreur de connexion:', err);
             setError(err.response?.data?.message || 'Échec de la connexion. Veuillez vérifier vos identifiants.');
@@ -40,67 +32,49 @@ function Login() {
 
     return (
         <div className="auth-container">
-            <div className="auth-wrapper">
-                <div className="auth-card">
-                    <div className="auth-header">
-                        <h2 className="auth-title">Connexion</h2>
+            <div className="auth-card">
+                <h2 className="auth-title">Connexion</h2>
+                <form onSubmit={handleLogin}>
+                    <div className="auth-form-group">
+                        <label htmlFor="email" className="auth-label">Email</label>
+                        <input
+                            type="email"
+                            id="email"
+                            className="auth-input"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            placeholder="votre@email.com"
+                            required
+                        />
                     </div>
                     
-                    <form onSubmit={handleLogin} className="auth-form">
-                        <div className="form-group">
-                            <label htmlFor="email" className="form-label">
-                                Email
-                            </label>
-                            <input
-                                type="email"
-                                id="email"
-                                className="form-input"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                placeholder="votre@email.com"
-                                required
-                            />
-                        </div>
-                        
-                        <div className="form-group">
-                            <label htmlFor="password" className="form-label">
-                                Mot de passe
-                            </label>
-                            <input
-                                type="password"
-                                id="password"
-                                className="form-input"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                placeholder="••••••••"
-                                required
-                            />
-                        </div>
-                        
-                        {error && (
-                            <div className="error-message">
-                                {error}
-                            </div>
-                        )}
-                        
-                        <button 
-                            type="submit" 
-                            className="auth-button"
-                            disabled={loading}
-                        >
-                            {loading ? 'Connexion en cours...' : 'Se connecter'}
-                        </button>
-                    </form>
-                    
-                    <div className="auth-footer">
-                        <p className="auth-link-text">
-                            Pas encore de compte ?{' '}
-                            <Link to="/register" className="auth-link">
-                                S'inscrire
-                            </Link>
-                        </p>
+                    <div className="auth-form-group">
+                        <label htmlFor="password" className="auth-label">Mot de passe</label>
+                        <input
+                            type="password"
+                            id="password"
+                            className="auth-input"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            placeholder="••••••••"
+                            required
+                        />
                     </div>
-                </div>
+                    
+                    {error && <p className="auth-error-message">{error}</p>}
+                    
+                    <button 
+                        type="submit" 
+                        className={`auth-button ${loading ? 'loading' : ''}`}
+                        disabled={loading}
+                    >
+                        {loading ? 'Connexion en cours...' : 'Se connecter'}
+                    </button>
+                </form>
+                
+                <p className="auth-link-text">
+                    Pas encore de compte ? <Link to="/register" className="auth-link">S'inscrire</Link>
+                </p>
             </div>
         </div>
     );

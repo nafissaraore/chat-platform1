@@ -7,7 +7,7 @@ import socket from '../utils/socket';
 import './Dashboard.css';
 
 function Dashboard() {
-    const { user, loading: authLoading, isAuthenticated } = useAuth();
+    const { user, loading: authLoading } = useAuth();
     const navigate = useNavigate();
 
     const [rooms, setRooms] = useState([]);
@@ -20,30 +20,16 @@ function Dashboard() {
     const [onlineUsersError, setOnlineUsersError] = useState('');
     const [allUsersError, setAllUsersError] = useState('');
     const [socketConnected, setSocketConnected] = useState(false);
-    
-    // ✅ Nouvel état pour forcer le rendu des sidebars
-    const [dataReady, setDataReady] = useState(false);
 
-    // ✅ Redirection si pas authentifié
     useEffect(() => {
-        if (!authLoading && !isAuthenticated) {
-            console.log('❌ Utilisateur non authentifié, redirection vers login');
+        if (!authLoading && !user) {
             navigate('/login');
         }
-    }, [isAuthenticated, authLoading, navigate]);
-
-    // ✅ Fonction pour vérifier si toutes les données sont prêtes
-    useEffect(() => {
-        if (!authLoading && isAuthenticated && user && !roomsLoading && !allUsersLoading && !onlineUsersLoading) {
-            setDataReady(true);
-            console.log('✅ Toutes les données du dashboard sont prêtes');
-        }
-    }, [authLoading, isAuthenticated, user, roomsLoading, allUsersLoading, onlineUsersLoading]);
+    }, [user, authLoading, navigate]);
 
     useEffect(() => {
         const fetchRooms = async () => {
-            if (!user?.id) return; // ✅ Vérification plus stricte
-            
+            if (!user) return;
             setRoomsLoading(true);
             setRoomsError('');
             try {
@@ -60,7 +46,6 @@ function Dashboard() {
                     setRooms([]);
                 }
             } catch (err) {
-                console.error('Erreur chargement salles:', err);
                 setRoomsError(err.response?.data?.message || 'Salles: Impossible de charger.');
                 setRooms([]);
             } finally {
@@ -68,15 +53,14 @@ function Dashboard() {
             }
         };
 
-        // ✅ Attendre que l'utilisateur soit complètement chargé
-        if (!authLoading && user?.id) {
+        if (!authLoading && user) {
             fetchRooms();
         }
-    }, [authLoading, user?.id]); // ✅ Dépendance plus spécifique
+    }, [authLoading, user]);
 
     useEffect(() => {
         const fetchAllUsers = async () => {
-            if (!user?.id) return; // ✅ Vérification plus stricte
+            if (!user) return;
 
             setAllUsersLoading(true);
             setAllUsersError('');
@@ -92,7 +76,6 @@ function Dashboard() {
                     setAllUsers([]);
                 }
             } catch (err) {
-                console.error('Erreur chargement utilisateurs:', err);
                 setAllUsersError(err.response?.data?.message || 'Utilisateurs: Impossible de charger la liste.');
                 setAllUsers([]);
             } finally {
@@ -100,11 +83,10 @@ function Dashboard() {
             }
         };
 
-        // ✅ Attendre que l'utilisateur soit complètement chargé
-        if (!authLoading && user?.id) {
+        if (!authLoading && user) {
             fetchAllUsers();
         }
-    }, [authLoading, user?.id]); // ✅ Dépendance plus spécifique
+    }, [authLoading, user]);
 
     useEffect(() => {
         if (!authLoading && user?.id) {
@@ -116,7 +98,6 @@ function Dashboard() {
             }
 
             const handleOnlineUsers = (usersList) => {
-                console.log('Utilisateurs en ligne reçus:', usersList); // ✅ Debug
                 if (Array.isArray(usersList)) {
                     const filtered = usersList
                         .filter(u => u && u.id && parseInt(u.id, 10) !== userId)
@@ -131,20 +112,17 @@ function Dashboard() {
             };
 
             const handleConnect = () => {
-                console.log('Socket connecté'); // ✅ Debug
                 setSocketConnected(true);
                 setOnlineUsersError('');
                 socket.emit('userOnline', userId);
             };
 
             const handleDisconnect = () => {
-                console.log('Socket déconnecté'); // ✅ Debug
                 setSocketConnected(false);
                 setOnlineUsers([]);
             };
 
-            const handleConnectError = (error) => {
-                console.error('Erreur connexion socket:', error); // ✅ Debug
+            const handleConnectError = () => {
                 setSocketConnected(false);
                 setOnlineUsersError('Utilisateurs en ligne: Erreur de connexion.');
                 setOnlineUsersLoading(false);
@@ -155,12 +133,9 @@ function Dashboard() {
             socket.on('disconnect', handleDisconnect);
             socket.on('connect_error', handleConnectError);
 
-            // ✅ Initialisation immédiate si socket déjà connecté
             if (socket.connected) {
-                handleConnect();
-            } else {
-                // ✅ Forcer la connexion si pas encore connecté
-                socket.connect();
+                socket.emit('userOnline', userId);
+                setSocketConnected(true);
             }
 
             return () => {
@@ -173,9 +148,9 @@ function Dashboard() {
         } else {
             setOnlineUsersLoading(false);
         }
-    }, [authLoading, user?.id]); // ✅ Dépendance plus spécifique
+    }, [authLoading, user]);
 
-    // ✅ Attendre que l'authentification soit terminée
+    // Séparation des conditions de chargement pour une meilleure UX
     if (authLoading) {
         return (
             <div className="dashboard-loading-container">
@@ -187,53 +162,45 @@ function Dashboard() {
         );
     }
 
-    // ✅ Attendre que toutes les données soient chargées
-    if (!dataReady || roomsLoading || allUsersLoading || onlineUsersLoading) {
+    // Afficher uniquement les erreurs critiques qui empêchent le fonctionnement
+    if (roomsError && allUsersError && onlineUsersError) {
         return (
-            <div className="dashboard-loading-container">
-                <div className="text-center">
-                    <div className="dashboard-loading-spinner"></div>
-                    <p className="dashboard-loading-text">
-                        Chargement des données...
-                        {roomsLoading && ' (Salles)'}
-                        {allUsersLoading && ' (Utilisateurs)'}
-                        {onlineUsersLoading && ' (En ligne)'}
-                    </p>
-                </div>
+            <div className="dashboard-error-container">
+                <h3>Erreur de chargement</h3>
+                {roomsError && <p>{roomsError}</p>}
+                {allUsersError && <p>{allUsersError}</p>}
+                {onlineUsersError && <p>{onlineUsersError}</p>}
+                <button onClick={() => window.location.reload()} className="dashboard-reload-button">
+                    Recharger la page
+                </button>
             </div>
         );
     }
 
-    // ✅ Gestion des erreurs non bloquantes
-    const hasErrors = roomsError || allUsersError || onlineUsersError;
-    
     return (
         <div className="dashboard-container">
-            {/* ✅ Afficher les erreurs mais ne pas bloquer l'affichage */}
-            {hasErrors && (
-                <div className="dashboard-errors-banner">
-                    {roomsError && <div className="error-item">⚠️ {roomsError}</div>}
-                    {allUsersError && <div className="error-item">⚠️ {allUsersError}</div>}
-                    {onlineUsersError && <div className="error-item">⚠️ {onlineUsersError}</div>}
-                </div>
-            )}
-
             <div className="dashboard-chat-central-area">
                 <div className="dashboard-chat-placeholder">
                     <MessageCircle className="dashboard-chat-icon" />
                     <h3 className="dashboard-chat-title">Bienvenue sur votre Dashboard</h3>
-                    <p className="dashboard-chat-subtitle">
-                        Sélectionnez une salle ou un utilisateur pour commencer la conversation
-                    </p>
+                    <p className="dashboard-chat-subtitle">Sélectionnez une salle ou un utilisateur pour commencer la conversation</p>
                     
-                    {/* ✅ Informations de debug (à retirer en production) */}
-                    <div style={{ marginTop: '20px', fontSize: '12px', color: '#666' }}>
-                        <p>Utilisateur connecté: {user?.username}</p>
-                        <p>Salles chargées: {rooms.length}</p>
-                        <p>Utilisateurs totaux: {allUsers.length}</p>
-                        <p>Utilisateurs en ligne: {onlineUsers.length}</p>
-                        <p>Socket connecté: {socketConnected ? '✅' : '❌'}</p>
-                    </div>
+                    {/* Affichage des états de chargement individuels pour info */}
+                    {(roomsLoading || allUsersLoading || onlineUsersLoading) && (
+                        <div className="dashboard-loading-info">
+                            <div className="dashboard-loading-spinner-small"></div>
+                            <p>Chargement des données en cours...</p>
+                        </div>
+                    )}
+                    
+                    {/* Affichage des erreurs non-critiques */}
+                    {(roomsError || allUsersError || onlineUsersError) && (
+                        <div className="dashboard-warning-info">
+                            {roomsError && <p className="warning-text">{roomsError}</p>}
+                            {allUsersError && <p className="warning-text">{allUsersError}</p>}
+                            {onlineUsersError && <p className="warning-text">{onlineUsersError}</p>}
+                        </div>
+                    )}
                 </div>
             </div>
         </div>
