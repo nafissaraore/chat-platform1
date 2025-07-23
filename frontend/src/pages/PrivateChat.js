@@ -11,6 +11,7 @@ function PrivateChat() {
     const navigate = useNavigate();
     const { user, loading: authLoading } = useAuth();
     const messagesEndRef = useRef(null);
+    const emojiPickerRef = useRef(null);
 
     const [receiverDetails, setReceiverDetails] = useState(null);
     const [messages, setMessages] = useState([]);
@@ -68,6 +69,23 @@ function PrivateChat() {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages]);
 
+    // Gérer les clics en dehors de l'emoji picker pour le fermer
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (emojiPickerRef.current && !emojiPickerRef.current.contains(event.target)) {
+                setShowEmojiPicker(false);
+            }
+        };
+
+        if (showEmojiPicker) {
+            document.addEventListener('mousedown', handleClickOutside);
+        }
+
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [showEmojiPicker]);
+
     const handleSendMessage = async (e) => {
         e.preventDefault();
         if (!user || !receiverDetails || parseInt(receiverId) === user.id) return;
@@ -110,10 +128,18 @@ function PrivateChat() {
             });
             setMessageInput('');
         }
+        
+        // Fermer l'emoji picker après envoi
+        setShowEmojiPicker(false);
     };
 
     const handleEmojiClick = (emojiData) => {
         setMessageInput((prev) => prev + emojiData.emoji);
+        setShowEmojiPicker(false); // Fermer après sélection
+    };
+
+    const toggleEmojiPicker = () => {
+        setShowEmojiPicker((prev) => !prev);
     };
 
     const renderMessageContent = (msg) =>
@@ -151,7 +177,6 @@ function PrivateChat() {
                     <div className="private-chat-header-avatar">{receiverDetails?.username[0]?.toUpperCase()}</div>
                     <h2 className="private-chat-name">Discussion avec {receiverDetails?.username}</h2>
                 </div>
-               
             </div>
 
             <div className="private-chat-messages-area">
@@ -180,10 +205,24 @@ function PrivateChat() {
                 <div ref={messagesEndRef} />
             </div>
 
+            {/* Emoji Picker repositionné avec overlay */}
             {showEmojiPicker && (
-                <div style={{ position: 'absolute', bottom: '80px', left: '60px', zIndex: 999 }}>
-                    <EmojiPicker onEmojiClick={handleEmojiClick} />
-                </div>
+                <>
+                    <div className="emoji-picker-overlay" onClick={() => setShowEmojiPicker(false)} />
+                    <div className="emoji-picker-container" ref={emojiPickerRef}>
+                        <EmojiPicker 
+                            onEmojiClick={handleEmojiClick}
+                            width={300}
+                            height={350}
+                            searchDisabled={false}
+                            skinTonesDisabled={false}
+                            previewConfig={{
+                                defaultEmoji: "1f60a",
+                                defaultCaption: "Choisir un emoji"
+                            }}
+                        />
+                    </div>
+                </>
             )}
 
             <form onSubmit={handleSendMessage} className="private-message-input-form">
@@ -197,8 +236,8 @@ function PrivateChat() {
                 <label htmlFor="file-input-private" className={`private-input-icon-button ${selectedFile ? 'private-file-selected' : ''}`}>📎</label>
                 <button
                     type="button"
-                    onClick={() => setShowEmojiPicker((prev) => !prev)}
-                    className="private-input-icon-button"
+                    onClick={toggleEmojiPicker}
+                    className={`private-input-icon-button ${showEmojiPicker ? 'emoji-active' : ''}`}
                     title="Émojis">😊
                 </button>
                 <input

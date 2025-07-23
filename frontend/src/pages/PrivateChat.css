@@ -482,18 +482,127 @@
 }
 
 /* Picker d'émojis */
-.emoji-picker-wrapper {
-  position: absolute;
-  bottom: 90px;
-  left: 20px;
-  right: 20px;
-  z-index: 1000;
-  border-radius: 20px;
-  overflow: hidden;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
-  backdrop-filter: blur(20px);
+/* Ajouts/modifications pour corriger l'emoji picker */
+
+/* Overlay pour fermer l'emoji picker */
+.emoji-picker-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.3);
+  z-index: 998;
+  backdrop-filter: blur(2px);
 }
 
+/* Container de l'emoji picker repositionné */
+.emoji-picker-container {
+  position: fixed;
+  bottom: 120px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 999;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(102, 126, 234, 0.2);
+  background: rgba(255, 255, 255, 0.95);
+}
+
+/* Style pour le bouton emoji actif */
+.private-input-icon-button.emoji-active {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  transform: scale(1.05);
+}
+
+/* Version responsive pour mobile */
+@media (max-width: 768px) {
+  .emoji-picker-container {
+    position: fixed;
+    bottom: 100px;
+    left: 10px;
+    right: 10px;
+    transform: none;
+    max-width: calc(100vw - 20px);
+  }
+  
+  /* Réduire la taille sur mobile */
+  .emoji-picker-container .EmojiPickerReact {
+    width: 100% !important;
+    max-width: 100%;
+  }
+}
+
+/* Animation d'apparition de l'emoji picker */
+.emoji-picker-container {
+  animation: emojiPickerSlideUp 0.3s ease-out;
+}
+
+@keyframes emojiPickerSlideUp {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+@media (max-width: 768px) {
+  @keyframes emojiPickerSlideUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}
+
+/* Styles pour personnaliser l'emoji picker */
+.emoji-picker-container .EmojiPickerReact {
+  border: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+}
+
+.emoji-picker-container .EmojiPickerReact .epr-search-container {
+  background: rgba(255, 255, 255, 0.9) !important;
+  backdrop-filter: blur(10px);
+}
+
+.emoji-picker-container .EmojiPickerReact .epr-emoji-category-label {
+  background: rgba(102, 126, 234, 0.1) !important;
+  color: #667eea !important;
+  font-weight: 600 !important;
+}
+
+.emoji-picker-container .EmojiPickerReact .epr-emoji:hover {
+  background: rgba(102, 126, 234, 0.1) !important;
+}
+
+/* Améliorer la zone de chat pour éviter les conflits */
+.private-chat-messages-area {
+  position: relative;
+  z-index: 1;
+}
+
+.private-message-input-form {
+  position: relative;
+  z-index: 2;
+}
+
+/* S'assurer que le header reste au-dessus */
+.private-chat-header {
+  position: relative;
+  z-index: 3;
+}
 /* Vidéo call */
 .private-video-call-container {
   position: fixed;
