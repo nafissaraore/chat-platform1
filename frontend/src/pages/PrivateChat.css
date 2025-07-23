@@ -64,8 +64,8 @@
 .private-chat-container {
   display: flex;
   flex-direction: column;
-  height: calc(100vh - 40px); /* Ajusté pour plus de hauteur */
-  max-width: 1500px; /* Agrandit le chat */
+  height: calc(100vh - 20px); /* Ajusté pour plus de hauteur */
+  max-width: 1800px; /* Agrandit le chat */
   margin: auto;
   background: #ffffff;
   border-radius: 20px;
