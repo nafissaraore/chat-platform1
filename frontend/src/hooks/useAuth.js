@@ -1,5 +1,5 @@
 // frontend/src/hooks/useAuth.js
-import { useState, useLayoutEffect } from 'react';
+import { useState, useEffect } from 'react';
 import api from '../utils/api';
 
 const useAuth = () => {
@@ -40,40 +40,33 @@ const useAuth = () => {
         }
     };
 
-    // Utilisation de useLayoutEffect pour une initialisation plus rapide
-    useLayoutEffect(() => {
-        const initAuth = () => {
-            const token = localStorage.getItem('token');
-            const userData = localStorage.getItem('user');
+    useEffect(() => {
+        const token = localStorage.getItem('token');
+        const userData = localStorage.getItem('user');
 
-            if (token && userData) {
-                try {
-                    const parsedUser = JSON.parse(userData);
-                    setIsAuthenticated(true);
-                    setUser(parsedUser);
-                    console.log("******************************************************************");
-                    console.log("DEBUG useAuth: Utilisateur chargé depuis localStorage:", parsedUser);
-                    console.log("DEBUG useAuth: ID de l'utilisateur chargé:", parsedUser.id);
-                    console.log("DEBUG useAuth: Type de l'ID de l'utilisateur chargé:", typeof parsedUser.id);
-                    console.log("******************************************************************");
-                } catch (e) {
-                    console.error("Erreur lors du parsing des données utilisateur du localStorage", e);
-                    localStorage.removeItem('token');
-                    localStorage.removeItem('user');
-                    setIsAuthenticated(false);
-                    setUser(null);
-                }
-            } else {
+        if (token && userData) {
+            try {
+                const parsedUser = JSON.parse(userData);
+                setIsAuthenticated(true);
+                setUser(parsedUser);
+                console.log("******************************************************************");
+                console.log("DEBUG useAuth: Utilisateur chargé depuis localStorage:", parsedUser);
+                console.log("DEBUG useAuth: ID de l'utilisateur chargé:", parsedUser.id);
+                console.log("DEBUG useAuth: Type de l'ID de l'utilisateur chargé:", typeof parsedUser.id);
+                console.log("******************************************************************");
+            } catch (e) {
+                console.error("Erreur lors du parsing des données utilisateur du localStorage", e);
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
                 setIsAuthenticated(false);
                 setUser(null);
             }
-            
-            // Finaliser le chargement immédiatement après l'initialisation
-            setLoading(false);
-        };
+        } else {
+            setIsAuthenticated(false);
+            setUser(null);
+        }
 
-        // Exécution immédiate de l'initialisation
-        initAuth();
+        setLoading(false);
     }, []);
 
     return { isAuthenticated, user, loading, refreshUser };

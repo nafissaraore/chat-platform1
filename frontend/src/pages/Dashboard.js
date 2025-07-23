@@ -2,24 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { MessageCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import useAuth from '../hooks/useAuth';
-import api from '../utils/api';
-import socket from '../utils/socket';
 import './Dashboard.css';
 
-function Dashboard() {
+function Dashboard({ rooms = [], allUsers = [], onlineUsers = [], loading = false }) {
     const { user, loading: authLoading } = useAuth();
     const navigate = useNavigate();
 
-    const [rooms, setRooms] = useState([]);
-    const [onlineUsers, setOnlineUsers] = useState([]);
-    const [allUsers, setAllUsers] = useState([]);
-    const [roomsLoading, setRoomsLoading] = useState(true);
-    const [onlineUsersLoading, setOnlineUsersLoading] = useState(true);
-    const [allUsersLoading, setAllUsersLoading] = useState(true);
-    const [roomsError, setRoomsError] = useState('');
-    const [onlineUsersError, setOnlineUsersError] = useState('');
-    const [allUsersError, setAllUsersError] = useState('');
-    const [socketConnected, setSocketConnected] = useState(false);
+    // ✅ Utiliser les données passées par MainLayout plutôt que de les recharger
+    const [localLoading, setLocalLoading] = useState(false);
 
     useEffect(() => {
         if (!authLoading && !user) {
@@ -27,130 +17,7 @@ function Dashboard() {
         }
     }, [user, authLoading, navigate]);
 
-    useEffect(() => {
-        const fetchRooms = async () => {
-            if (!user) return;
-            setRoomsLoading(true);
-            setRoomsError('');
-            try {
-                const response = await api.get('/rooms');
-                if (Array.isArray(response.data)) {
-                    setRooms(response.data);
-                } else if (response.data && Array.isArray(response.data.rooms)) {
-                    setRooms(response.data.rooms);
-                } else if (response.data?.message) {
-                    setRoomsError(`Salles: ${response.data.message}`);
-                    setRooms([]);
-                } else {
-                    setRoomsError('Salles: Format de données inattendu.');
-                    setRooms([]);
-                }
-            } catch (err) {
-                setRoomsError(err.response?.data?.message || 'Salles: Impossible de charger.');
-                setRooms([]);
-            } finally {
-                setRoomsLoading(false);
-            }
-        };
-
-        if (!authLoading && user) {
-            fetchRooms();
-        }
-    }, [authLoading, user]);
-
-    useEffect(() => {
-        const fetchAllUsers = async () => {
-            if (!user) return;
-
-            setAllUsersLoading(true);
-            setAllUsersError('');
-            try {
-                const response = await api.get('/users');
-                if (Array.isArray(response.data)) {
-                    const filteredUsers = response.data
-                        .filter(u => u && u.id && parseInt(u.id, 10) !== parseInt(user.id, 10))
-                        .map(u => ({ ...u, id: parseInt(u.id, 10) }));
-                    setAllUsers(filteredUsers);
-                } else {
-                    setAllUsersError('Utilisateurs: Format de données inattendu.');
-                    setAllUsers([]);
-                }
-            } catch (err) {
-                setAllUsersError(err.response?.data?.message || 'Utilisateurs: Impossible de charger la liste.');
-                setAllUsers([]);
-            } finally {
-                setAllUsersLoading(false);
-            }
-        };
-
-        if (!authLoading && user) {
-            fetchAllUsers();
-        }
-    }, [authLoading, user]);
-
-    useEffect(() => {
-        if (!authLoading && user?.id) {
-            const userId = parseInt(user.id, 10);
-            if (isNaN(userId)) {
-                setOnlineUsersError('Utilisateurs en ligne: ID utilisateur invalide.');
-                setOnlineUsersLoading(false);
-                return;
-            }
-
-            const handleOnlineUsers = (usersList) => {
-                if (Array.isArray(usersList)) {
-                    const filtered = usersList
-                        .filter(u => u && u.id && parseInt(u.id, 10) !== userId)
-                        .map(u => ({ ...u, id: parseInt(u.id, 10) }));
-                    setOnlineUsers(filtered);
-                    setOnlineUsersError('');
-                } else {
-                    setOnlineUsers([]);
-                    setOnlineUsersError('Utilisateurs en ligne: Format de données inattendu.');
-                }
-                setOnlineUsersLoading(false);
-            };
-
-            const handleConnect = () => {
-                setSocketConnected(true);
-                setOnlineUsersError('');
-                socket.emit('userOnline', userId);
-            };
-
-            const handleDisconnect = () => {
-                setSocketConnected(false);
-                setOnlineUsers([]);
-            };
-
-            const handleConnectError = () => {
-                setSocketConnected(false);
-                setOnlineUsersError('Utilisateurs en ligne: Erreur de connexion.');
-                setOnlineUsersLoading(false);
-            };
-
-            socket.on('onlineUsers', handleOnlineUsers);
-            socket.on('connect', handleConnect);
-            socket.on('disconnect', handleDisconnect);
-            socket.on('connect_error', handleConnectError);
-
-            if (socket.connected) {
-                socket.emit('userOnline', userId);
-                setSocketConnected(true);
-            }
-
-            return () => {
-                socket.emit('userOffline', userId);
-                socket.off('onlineUsers', handleOnlineUsers);
-                socket.off('connect', handleConnect);
-                socket.off('disconnect', handleDisconnect);
-                socket.off('connect_error', handleConnectError);
-            };
-        } else {
-            setOnlineUsersLoading(false);
-        }
-    }, [authLoading, user]);
-
-    // Séparation des conditions de chargement pour une meilleure UX
+    // ✅ Affichage de loading uniquement pour l'authentification
     if (authLoading) {
         return (
             <div className="dashboard-loading-container">
@@ -162,45 +29,40 @@ function Dashboard() {
         );
     }
 
-    // Afficher uniquement les erreurs critiques qui empêchent le fonctionnement
-    if (roomsError && allUsersError && onlineUsersError) {
-        return (
-            <div className="dashboard-error-container">
-                <h3>Erreur de chargement</h3>
-                {roomsError && <p>{roomsError}</p>}
-                {allUsersError && <p>{allUsersError}</p>}
-                {onlineUsersError && <p>{onlineUsersError}</p>}
-                <button onClick={() => window.location.reload()} className="dashboard-reload-button">
-                    Recharger la page
-                </button>
-            </div>
-        );
-    }
-
+    // ✅ Si les données sont en cours de chargement, afficher quand même le dashboard avec un indicateur subtil
     return (
         <div className="dashboard-container">
             <div className="dashboard-chat-central-area">
                 <div className="dashboard-chat-placeholder">
                     <MessageCircle className="dashboard-chat-icon" />
-                    <h3 className="dashboard-chat-title">Bienvenue sur votre Dashboard</h3>
-                    <p className="dashboard-chat-subtitle">Sélectionnez une salle ou un utilisateur pour commencer la conversation</p>
+                    <h3 className="dashboard-chat-title">
+                        Bienvenue sur votre Dashboard {user?.username && `, ${user.username}`}
+                    </h3>
+                    <p className="dashboard-chat-subtitle">
+                        Sélectionnez une salle ou un utilisateur pour commencer la conversation
+                    </p>
                     
-                    {/* Affichage des états de chargement individuels pour info */}
-                    {(roomsLoading || allUsersLoading || onlineUsersLoading) && (
-                        <div className="dashboard-loading-info">
-                            <div className="dashboard-loading-spinner-small"></div>
-                            <p>Chargement des données en cours...</p>
+                    {loading && (
+                        <div className="dashboard-loading-indicator">
+                            <small>Chargement des données en cours...</small>
                         </div>
                     )}
-                    
-                    {/* Affichage des erreurs non-critiques */}
-                    {(roomsError || allUsersError || onlineUsersError) && (
-                        <div className="dashboard-warning-info">
-                            {roomsError && <p className="warning-text">{roomsError}</p>}
-                            {allUsersError && <p className="warning-text">{allUsersError}</p>}
-                            {onlineUsersError && <p className="warning-text">{onlineUsersError}</p>}
+
+                    {/* ✅ Statistiques en temps réel */}
+                    <div className="dashboard-stats">
+                        <div className="dashboard-stat-item">
+                            <span className="dashboard-stat-number">{rooms.length}</span>
+                            <span className="dashboard-stat-label">Salles disponibles</span>
                         </div>
-                    )}
+                        <div className="dashboard-stat-item">
+                            <span className="dashboard-stat-number">{onlineUsers.length}</span>
+                            <span className="dashboard-stat-label">Utilisateurs en ligne</span>
+                        </div>
+                        <div className="dashboard-stat-item">
+                            <span className="dashboard-stat-number">{allUsers.length}</span>
+                            <span className="dashboard-stat-label">Utilisateurs total</span>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

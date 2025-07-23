@@ -36,6 +36,9 @@ function MainLayout() {
   const [unreadMessages, setUnreadMessages] = useState({});
   const [showCreateRoomModal, setShowCreateRoomModal] = useState(false);
   const [activeRoom, setActiveRoom] = useState(null);
+  
+  // ✅ États séparés pour un meilleur contrôle
+  const [dataLoaded, setDataLoaded] = useState(false);
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -52,41 +55,69 @@ function MainLayout() {
 
   const handleProfileUpdated = async () => {
     console.log("Profil mis à jour, rafraîchissement des données utilisateur...");
-    await refreshUser?.(); // Ajout du "?" au cas où refreshUser n’est pas défini
+    await refreshUser?.();
   };
 
-  useEffect(() => {
-    const fetchData = async () => {
-      if (!isAuthenticated) return;
-      setLoadingData(true);
-      try {
-        const [usersRes, roomsRes, conversationsRes] = await Promise.all([
-          api.get('/users'),
-          api.get('/rooms'),
-          user?.id ? api.get(`/private-messages/conversations/${user.id}`) : Promise.resolve({ data: [] })
-        ]);
-        setAllUsers(usersRes.data || []);
-        setRooms(roomsRes.data || []);
-        setRecentPrivateConversations(conversationsRes.data || []);
-      } catch (error) {
-        console.error("Erreur lors du chargement des données :", error);
-        if (error.response?.status === 401) handleLogout();
-      } finally {
-        setLoadingData(false);
+  // ✅ Fonction pour charger les données de base
+  const fetchInitialData = async () => {
+    if (!isAuthenticated || !user?.id) return;
+    
+    setLoadingData(true);
+    try {
+      console.log("🔄 Chargement des données initiales...");
+      
+      const [usersRes, roomsRes, conversationsRes] = await Promise.all([
+        api.get('/users').catch(err => {
+          console.error("Erreur chargement users:", err);
+          return { data: [] };
+        }),
+        api.get('/rooms').catch(err => {
+          console.error("Erreur chargement rooms:", err);
+          return { data: [] };
+        }),
+        api.get(`/private-messages/conversations/${user.id}`).catch(err => {
+          console.error("Erreur chargement conversations:", err);
+          return { data: [] };
+        })
+      ]);
+
+      setAllUsers(usersRes.data || []);
+      setRooms(roomsRes.data || []);
+      setRecentPrivateConversations(conversationsRes.data || []);
+      setDataLoaded(true);
+      
+      console.log("✅ Données initiales chargées avec succès");
+    } catch (error) {
+      console.error("❌ Erreur lors du chargement des données :", error);
+      if (error.response?.status === 401) {
+        handleLogout();
+        return;
       }
-    };
+      // Même en cas d'erreur, on affiche les sidebars
+      setDataLoaded(true);
+    } finally {
+      setLoadingData(false);
+    }
+  };
 
-    if (!authLoading && isAuthenticated) fetchData();
-  }, [isAuthenticated, user, authLoading]);
-
+  // ✅ Effet pour charger les données dès que l'utilisateur est authentifié
   useEffect(() => {
-    if (!user?.id) return;
+    if (!authLoading && isAuthenticated && user?.id && !dataLoaded) {
+      fetchInitialData();
+    }
+  }, [authLoading, isAuthenticated, user?.id, dataLoaded]);
 
+  // ✅ Configuration des sockets une fois les données de base chargées
+  useEffect(() => {
+    if (!user?.id || !dataLoaded) return;
+
+    console.log("🔌 Configuration des sockets pour user:", user.id);
     socket.emit('userOnline', user.id);
 
     const handleOnlineUsers = (users) => {
       const filtered = users.filter(u => u.id !== user.id);
       setOnlineUsers(filtered);
+      console.log("👥 Utilisateurs en ligne mis à jour:", filtered.length);
     };
 
     const handleUnreadCount = ({ senderId, count }) => {
@@ -135,7 +166,7 @@ function MainLayout() {
       socket.off('unreadCount', handleUnreadCount);
       socket.off('privateMessage', handleNewPrivateMessage);
     };
-  }, [user, location.pathname, allUsers]);
+  }, [user?.id, dataLoaded, location.pathname, allUsers]);
 
   const filteredRooms = rooms.filter(room =>
     room.name?.toLowerCase().includes(searchTerm.toLowerCase())
@@ -158,17 +189,19 @@ function MainLayout() {
     location.pathname === '/admin/create-room'
   );
 
-  if (authLoading || loadingData) {
+  // ✅ Loading uniquement pour l'auth, pas pour les données
+  if (authLoading) {
     return (
       <div className="main-layout-loading-container">
         <div className="main-layout-loading-spinner"></div>
-        <p>Chargement de l'application...</p>
+        <p>Authentification en cours...</p>
       </div>
     );
   }
 
   return (
     <div className="main-layout-container">
+      {/* ✅ Afficher les sidebars dès que l'utilisateur est authentifié */}
       {showFullChatLayout && (
         <LeftSidebar
           user={user}
@@ -183,6 +216,7 @@ function MainLayout() {
           activeRoom={activeRoom}
           setActiveRoom={setActiveRoom}
           onOpenCreateRoom={() => setShowCreateRoomModal(true)}
+          loading={loadingData} // ✅ Passer l'état de loading aux sidebars
         />
       )}
 
@@ -199,7 +233,16 @@ function MainLayout() {
           <Route path="/" element={<HomePage />} />
           <Route path="/register" element={<Register />} />
           <Route path="/login" element={<Login />} />
-          <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+          <Route path="/dashboard" element={
+            <ProtectedRoute>
+              <Dashboard 
+                rooms={rooms} 
+                allUsers={allUsers} 
+                onlineUsers={onlineUsers}
+                loading={loadingData}
+              />
+            </ProtectedRoute>
+          } />
           <Route path="/chat/:roomId" element={<ProtectedRoute><ChatRoom /></ProtectedRoute>} />
           <Route path="/profile" element={<ProtectedRoute><ProfilePage onProfileUpdated={handleProfileUpdated} /></ProtectedRoute>} />
           <Route path="/users" element={<ProtectedRoute><UserList /></ProtectedRoute>} />
@@ -209,12 +252,14 @@ function MainLayout() {
         </Routes>
       </div>
 
+      {/* ✅ Afficher le panneau droit dès que l'utilisateur est authentifié */}
       {showFullChatLayout && (
         <RightInfoPanel 
           user={user}
           allUsers={allUsers}
           rooms={rooms}
           activeRoom={activeRoom}
+          loading={loadingData} // ✅ Passer l'état de loading
         />
       )}
 

@@ -14,16 +14,21 @@ function Login() {
         e.preventDefault();
         setError('');
         setLoading(true);
-        
+
         try {
             const response = await api.post('/auth/login', { email, password });
+            
+            // ✅ Stocker les données utilisateur
             localStorage.setItem('token', response.data.token);
             localStorage.setItem('user', JSON.stringify(response.data.user));
+
+            console.log("✅ Connexion réussie pour:", response.data.user.username);
+
+            // ✅ Redirection immédiate sans délai
+            navigate('/dashboard', { replace: true });
             
-            // Navigation immédiate sans délai artificiel
-            navigate('/dashboard');
         } catch (err) {
-            console.error('Erreur de connexion:', err);
+            console.error('❌ Erreur de connexion:', err);
             setError(err.response?.data?.message || 'Échec de la connexion. Veuillez vérifier vos identifiants.');
         } finally {
             setLoading(false);
@@ -47,7 +52,7 @@ function Login() {
                             required
                         />
                     </div>
-                    
+
                     <div className="auth-form-group">
                         <label htmlFor="password" className="auth-label">Mot de passe</label>
                         <input
@@ -60,9 +65,9 @@ function Login() {
                             required
                         />
                     </div>
-                    
+
                     {error && <p className="auth-error-message">{error}</p>}
-                    
+
                     <button 
                         type="submit" 
                         className={`auth-button ${loading ? 'loading' : ''}`}
@@ -71,7 +76,7 @@ function Login() {
                         {loading ? 'Connexion en cours...' : 'Se connecter'}
                     </button>
                 </form>
-                
+
                 <p className="auth-link-text">
                     Pas encore de compte ? <Link to="/register" className="auth-link">S'inscrire</Link>
                 </p>
