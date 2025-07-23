@@ -6,18 +6,27 @@ const authMiddleware = require('../middleware/authMiddleware');
 const db = require('../config/db');
 
 const router = express.Router();
-
 // 🔐 Inscription
 router.post('/register', async (req, res) => {
     try {
         const { username, email, password } = req.body;
+        
+        // Validation des données reçues
+        if (!username || !email || !password) {
+            return res.status(400).json({ 
+                message: 'Tous les champs (username, email, password) sont requis' 
+            });
+        }
+        
         const existingUser = await User.findByEmail(email);
         if (existingUser) {
             return res.status(400).json({ message: 'Cet email est déjà utilisé' });
         }
 
         const hashedPassword = await bcrypt.hash(password, 10);
-        const userId = await User.create({ username, email, password: hashedPassword });
+        
+        // ✅ CORRECTION : Passer les paramètres individuellement
+        const userId = await User.create(username, email, hashedPassword);
 
         const token = jwt.sign(
             { id: userId, username, email },
@@ -35,7 +44,6 @@ router.post('/register', async (req, res) => {
         res.status(500).json({ message: 'Erreur serveur' });
     }
 });
-
 // 🔓 Connexion
 router.post('/login', async (req, res) => {
     try {

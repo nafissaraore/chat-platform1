@@ -1,22 +1,57 @@
-// backend/models/User.js
-const db = require('../config/db'); // Assurez-vous que c'est bien votre pool promise-based
-const bcrypt = require('bcryptjs'); // Assurez-vous d'avoir bcryptjs installé
+const db = require('../config/db');
+const bcrypt = require('bcryptjs');
 
 class User {
-    static async create(username, email, password, role = 'user') {
-        const [result] = await db.execute(
-            'INSERT INTO users (username, email, password, role) VALUES (?, ?, ?, ?)',
-            [username, email, password, role]
-        );
-        return result.insertId;
+    // ✅ Version flexible qui accepte soit un objet, soit des paramètres individuels
+    static async create(usernameOrData, email = null, password = null, role = 'user') {
+        let username, finalEmail, finalPassword, finalRole;
+        
+        // Si le premier paramètre est un objet
+        if (typeof usernameOrData === 'object' && usernameOrData !== null) {
+            const data = usernameOrData;
+            username = data.username;
+            finalEmail = data.email;
+            finalPassword = data.password;
+            finalRole = data.role || 'user';
+        } else {
+            // Si ce sont des paramètres individuels
+            username = usernameOrData;
+            finalEmail = email;
+            finalPassword = password;
+            finalRole = role;
+        }
+        
+        // Validation des données
+        if (!username || !finalEmail || !finalPassword) {
+            throw new Error('Username, email et password sont requis');
+        }
+        
+        try {
+            const [result] = await db.execute(
+                'INSERT INTO users (username, email, password, role) VALUES (?, ?, ?, ?)',
+                [username, finalEmail, finalPassword, finalRole]
+            );
+            return result.insertId;
+        } catch (error) {
+            console.error('Erreur lors de la création de l\'utilisateur:', error);
+            throw error;
+        }
     }
 
     static async findByEmail(email) {
-        const [rows] = await db.execute('SELECT * FROM users WHERE email = ?', [email]);
-        return rows[0];
+        if (!email) {
+            throw new Error('Email requis pour la recherche');
+        }
+        
+        try {
+            const [rows] = await db.execute('SELECT * FROM users WHERE email = ?', [email]);
+            return rows[0];
+        } catch (error) {
+            console.error('Erreur lors de la recherche par email:', error);
+            throw error;
+        }
     }
 
-    // Version robuste de findById (déjà correcte)
     static async findById(id) {
         const parsedId = parseInt(id, 10);
         if (isNaN(parsedId)) {
@@ -24,7 +59,6 @@ class User {
             return null;
         }
         try {
-            // SÉLECTIONNEZ UNIQUEMENT LES CHAMPS NÉCESSAIRES, PAS LE MOT DE PASSE
             const [rows] = await db.execute('SELECT id, username, email, role FROM users WHERE id = ?', [parsedId]);
             return rows[0];
         } catch (error) {
@@ -34,27 +68,46 @@ class User {
     }
 
     static async findAll() {
-        const [rows] = await db.execute('SELECT id, username, email, role, created_at FROM users ORDER BY username ASC');
-        return rows;
+        try {
+            const [rows] = await db.execute('SELECT id, username, email, role, created_at FROM users ORDER BY username ASC');
+            return rows;
+        } catch (error) {
+            console.error('Erreur lors de la récupération de tous les utilisateurs:', error);
+            throw error;
+        }
     }
 
     static async updateRole(userId, role) {
-        const [result] = await db.execute(
-            'UPDATE users SET role = ? WHERE id = ?',
-            [role, userId]
-        );
-        return result.affectedRows > 0;
+        try {
+            const [result] = await db.execute(
+                'UPDATE users SET role = ? WHERE id = ?',
+                [role, userId]
+            );
+            return result.affectedRows > 0;
+        } catch (error) {
+            console.error('Erreur lors de la mise à jour du rôle:', error);
+            throw error;
+        }
     }
 
     static async searchUsers(searchTerm) {
-        const [rows] = await db.execute(
-            `SELECT u.id, u.username, u.email, u.role, p.photo_url, p.intention
-             FROM users u
-             LEFT JOIN profiles p ON u.id = p.user_id
-             WHERE u.username LIKE ? OR u.email LIKE ?`,
-            [`%${searchTerm}%`, `%${searchTerm}%`]
-        );
-        return rows;
+        if (!searchTerm) {
+            return [];
+        }
+        
+        try {
+            const [rows] = await db.execute(
+                `SELECT u.id, u.username, u.email, u.role, p.photo_url, p.intention 
+                 FROM users u
+                 LEFT JOIN profiles p ON u.id = p.user_id
+                 WHERE u.username LIKE ? OR u.email LIKE ?`,
+                [`%${searchTerm}%`, `%${searchTerm}%`]
+            );
+            return rows;
+        } catch (error) {
+            console.error('Erreur lors de la recherche d\'utilisateurs:', error);
+            throw error;
+        }
     }
 }
 
