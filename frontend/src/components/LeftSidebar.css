@@ -395,7 +395,7 @@
 .message-content {
   flex: 1;
   min-width: 0;
-  padding-top: 4px;   /* 🔧 Réduction de l’espace */
+  padding-top:   2px;   /* 🔧 Réduction de l’espace */
   padding-bottom: 4px;
 }
 
@@ -404,7 +404,7 @@
   justify-content: space-between;
   align-items: center;
   font-size: 14px;
-  margin-bottom: 2px;  /* 🔧 Moins d’espace entre nom et message */
+  margin-bottom: 1px;  /* 🔧 Moins d’espace entre nom et message */
 }
 
 .contact-name {
