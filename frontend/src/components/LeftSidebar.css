@@ -394,6 +394,7 @@
 .message-content {
   flex: 1;
   min-width: 0;
+  padding-top: 5px; 
 }
 
 .message-header {
