@@ -352,7 +352,7 @@
   left: 0;
   top: 0;
   bottom: 0;
-  width: 4px;
+  width: 10px;
   background: linear-gradient(135deg, #3b82f6, #8b5cf6);
 }
 
@@ -394,7 +394,7 @@
 .message-content {
   flex: 1;
   min-width: 0;
-  padding-top: 20px; 
+  padding-top: 10px; 
 }
 
 .message-header {
