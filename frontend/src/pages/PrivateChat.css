@@ -64,8 +64,8 @@
 .private-chat-container {
   display: flex;
   flex-direction: column;
-  height: calc(100vh - 100px);
-  max-width: 1000px;
+  height: calc(100vh - 60px); /* Ajusté pour plus de hauteur */
+  max-width: 1200px; /* Agrandit le chat */
   margin: auto;
   background: #ffffff;
   border-radius: 20px;
@@ -203,7 +203,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background-image: 
+  background-image:
     radial-gradient(circle at 20% 50%, rgba(102, 126, 234, 0.05) 0%, transparent 50%),
     radial-gradient(circle at 80% 20%, rgba(118, 75, 162, 0.05) 0%, transparent 50%);
   pointer-events: none;
@@ -268,7 +268,7 @@
 
 .private-message-bubble {
   position: relative;
-  max-width: 70%;
+  max-width: 80%; /* Agrandit la largeur des bulles */
   padding: 16px 20px;
   border-radius: 20px;
   transition: all 0.3s ease;
@@ -528,7 +528,7 @@
     transform: none;
     max-width: calc(100vw - 20px);
   }
-  
+
   /* Réduire la taille sur mobile */
   .emoji-picker-container .EmojiPickerReact {
     width: 100% !important;
@@ -677,41 +677,41 @@
 @media (max-width: 768px) {
   .private-chat-container {
     height: 100vh;
-    max-width: 100%;
+    max-width: 100%; /* S'assure qu'il prend toute la largeur sur mobile */
     border-radius: 0;
     margin: 0;
   }
-  
+
   .private-chat-header {
     padding: 16px 20px;
   }
-  
+
   .private-chat-name {
     font-size: 18px;
   }
-  
+
   .private-chat-messages-area {
     padding: 16px;
   }
-  
+
   .private-message-bubble {
-    max-width: 85%;
+    max-width: 90%; /* Ajusté pour les mobiles */
   }
-  
+
   .private-message-input-form {
     padding: 16px 20px;
   }
-  
+
   .emoji-picker-wrapper {
     left: 10px;
     right: 10px;
   }
-  
+
   .private-video-call-container {
     right: 15px;
     bottom: 90px;
   }
-  
+
   .remote-video, .local-video {
     width: 180px;
     height: 135px;
