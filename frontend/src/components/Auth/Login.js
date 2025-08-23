@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import api from '../../utils/api';
+import useAuth from '../../hooks/useAuth'; // ✅ importer le hook
 import './Auth.css';
 
 function Login() {
@@ -9,6 +10,7 @@ function Login() {
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
+    const { refreshUser } = useAuth(); // ✅ récupérer la fonction
 
     const handleLogin = async (e) => {
         e.preventDefault();
@@ -18,13 +20,15 @@ function Login() {
         try {
             const response = await api.post('/auth/login', { email, password });
             
-            // ✅ Stocker les données utilisateur
+            // ✅ Stocker le token
             localStorage.setItem('token', response.data.token);
-            localStorage.setItem('user', JSON.stringify(response.data.user));
+
+            // 🔄 Important : recharger le user dans le contexte global
+            await refreshUser();
 
             console.log("✅ Connexion réussie pour:", response.data.user.username);
 
-            // ✅ Redirection immédiate sans délai
+            // 🚀 Redirection seulement après le refresh
             navigate('/dashboard', { replace: true });
             
         } catch (err) {
