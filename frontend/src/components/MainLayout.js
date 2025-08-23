@@ -37,20 +37,12 @@ function MainLayout() {
   const [showCreateRoomModal, setShowCreateRoomModal] = useState(false);
   const [activeRoom, setActiveRoom] = useState(null);
   
-  // ✅ Reset dataLoaded quand l'utilisateur change (après inscription/connexion)
+  // ✅ États séparés pour un meilleur contrôle
   const [dataLoaded, setDataLoaded] = useState(false);
-  const [previousUserId, setPreviousUserId] = useState(null);
 
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
-    // Reset des états lors de la déconnexion
-    setAllUsers([]);
-    setOnlineUsers([]);
-    setRooms([]);
-    setRecentPrivateConversations([]);
-    setDataLoaded(false);
-    setPreviousUserId(null);
     window.location.href = '/login';
   };
 
@@ -67,12 +59,12 @@ function MainLayout() {
   };
 
   // ✅ Fonction pour charger les données de base
-  const fetchInitialData = async (forceReload = false) => {
+  const fetchInitialData = async () => {
     if (!isAuthenticated || !user?.id) return;
     
     setLoadingData(true);
     try {
-      console.log("🔄 Chargement des données initiales...", forceReload ? "(force reload)" : "");
+      console.log("🔄 Chargement des données initiales...");
       
       const [usersRes, roomsRes, conversationsRes] = await Promise.all([
         api.get('/users').catch(err => {
@@ -93,7 +85,6 @@ function MainLayout() {
       setRooms(roomsRes.data || []);
       setRecentPrivateConversations(conversationsRes.data || []);
       setDataLoaded(true);
-      setPreviousUserId(user.id);
       
       console.log("✅ Données initiales chargées avec succès");
     } catch (error) {
@@ -104,24 +95,10 @@ function MainLayout() {
       }
       // Même en cas d'erreur, on affiche les sidebars
       setDataLoaded(true);
-      setPreviousUserId(user.id);
     } finally {
       setLoadingData(false);
     }
   };
-
-  // ✅ Détection du changement d'utilisateur (inscription/connexion)
-  useEffect(() => {
-    if (user?.id && user.id !== previousUserId) {
-      console.log("🔄 Nouvel utilisateur détecté, reset et rechargement des données");
-      setDataLoaded(false);
-      setAllUsers([]);
-      setOnlineUsers([]);
-      setRooms([]);
-      setRecentPrivateConversations([]);
-      setUnreadMessages({});
-    }
-  }, [user?.id, previousUserId]);
 
   // ✅ Effet pour charger les données dès que l'utilisateur est authentifié
   useEffect(() => {
@@ -129,17 +106,6 @@ function MainLayout() {
       fetchInitialData();
     }
   }, [authLoading, isAuthenticated, user?.id, dataLoaded]);
-
-  // ✅ Effet pour rafraîchir les données après inscription/connexion
-  useEffect(() => {
-    // Si l'utilisateur vient de s'inscrire/connecter et arrive sur une page protégée
-    if (isAuthenticated && user?.id && 
-        (location.pathname === '/dashboard' || location.pathname.startsWith('/chat/')) &&
-        !dataLoaded && !loadingData) {
-      console.log("🔄 Chargement automatique des données après connexion");
-      fetchInitialData(true);
-    }
-  }, [location.pathname, isAuthenticated, user?.id, dataLoaded, loadingData]);
 
   // ✅ Configuration des sockets une fois les données de base chargées
   useEffect(() => {
@@ -250,7 +216,7 @@ function MainLayout() {
           activeRoom={activeRoom}
           setActiveRoom={setActiveRoom}
           onOpenCreateRoom={() => setShowCreateRoomModal(true)}
-          loading={loadingData}
+          loading={loadingData} // ✅ Passer l'état de loading aux sidebars
         />
       )}
 
@@ -274,7 +240,6 @@ function MainLayout() {
                 allUsers={allUsers} 
                 onlineUsers={onlineUsers}
                 loading={loadingData}
-                onRefreshData={() => fetchInitialData(true)}
               />
             </ProtectedRoute>
           } />
@@ -294,7 +259,7 @@ function MainLayout() {
           allUsers={allUsers}
           rooms={rooms}
           activeRoom={activeRoom}
-          loading={loadingData}
+          loading={loadingData} // ✅ Passer l'état de loading
         />
       )}
 
