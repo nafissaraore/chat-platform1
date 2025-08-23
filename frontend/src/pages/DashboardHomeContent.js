@@ -7,7 +7,7 @@ function DashboardHomeContent() {
         <div className={styles.chatArea}> {/* Utilise la classe chatArea définie dans Dashboard.module.css */}
             <div className={styles.welcomeMessageContainer}>
                 <span className={styles.welcomeIcon}>👋</span>
-                <h3 className={styles.welcomeTitle}>Bienvenue sur Simpion Chat !</h3>
+                <h3 className={styles.welcomeTitle}>Bienvenue  Chat !</h3>
                 <p className={styles.welcomeText}>Sélectionnez une conversation pour commencer à discuter.</p>
             </div>
         </div>
