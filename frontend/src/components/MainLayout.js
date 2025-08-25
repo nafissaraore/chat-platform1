@@ -1,335 +1,289 @@
-import React, { useEffect, useRef } from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { Settings, MessageCircle, Users, LogOut, Search, Plus, ArrowUp } from 'lucide-react';
-import './LeftSidebar.css';
+import React, { useEffect, useState } from 'react';
+import { Routes, Route, Link, useLocation, useNavigate } from 'react-router-dom';
+import LeftSidebar from './LeftSidebar';
+import RightInfoPanel from './RightInfoPanel';
+import ProtectedRoute from './ProtectedRoute';
 
-function LeftSidebar({
-  user,
-  onlineUsers = [],
-  allUsers = [],
-  handleLogout,
-  rooms = [],
-  searchTerm,
-  setSearchTerm,
-  setActiveRoom,
-  activeRoom,
-  recentPrivateConversations = [],
-  unreadMessages = {},
-  onOpenCreateRoom,
-}) {
+import Dashboard from '../pages/Dashboard';
+import ChatRoom from '../pages/ChatRoom';
+import HomePage from '../pages/HomePage';
+import AdminCreateRoom from '../pages/AdminCreateRoom';
+import ProfilePage from '../pages/ProfilePage';
+import UserList from '../pages/UserList';
+import PrivateChat from '../pages/PrivateChat';
+
+import Login from './Auth/Login';
+import Register from './Auth/Register';
+
+import useAuth from '../hooks/useAuth';
+import api from '../utils/api';
+import socket from '../utils/socket';
+
+import './MainLayout.css';
+import CreateRoomModal from './CreateRoomModal';
+
+function MainLayout() {
+  const { isAuthenticated, user, loading: authLoading, refreshUser } = useAuth();
   const location = useLocation();
-  const allUsersSectionRef = useRef(null);
-  const messagesSectionRef = useRef(null);
-  const onlineUsersSectionRef = useRef(null);
-  const roomsSectionRef = useRef(null);
+  const navigate = useNavigate();
 
-  const isActive = (path) =>
-    location.pathname === path || location.pathname.startsWith(path + '/');
+  const [allUsers, setAllUsers] = useState([]);
+  const [onlineUsers, setOnlineUsers] = useState([]);
+  const [rooms, setRooms] = useState([]);
+  const [recentPrivateConversations, setRecentPrivateConversations] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [loadingData, setLoadingData] = useState(false);
+  const [unreadMessages, setUnreadMessages] = useState({});
+  const [showCreateRoomModal, setShowCreateRoomModal] = useState(false);
+  const [activeRoom, setActiveRoom] = useState(null);
+  
+  // ✅ État pour suivre si c'est la première connexion
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
 
-  const formatMessageTime = (timestamp) => {
-    if (!timestamp) return '';
-    const messageDate = new Date(timestamp);
-    const now = new Date();
-    const diffInHours = Math.abs(now - messageDate) / (1000 * 60 * 60);
-    if (diffInHours < 24) {
-      return messageDate.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-    } else {
-      return messageDate.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' });
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    // ✅ Réinitialiser tous les états
+    setAllUsers([]);
+    setOnlineUsers([]);
+    setRooms([]);
+    setRecentPrivateConversations([]);
+    setUnreadMessages({});
+    setIsInitialLoad(true);
+    window.location.href = '/login';
+  };
+
+  const handleRoomCreated = (newRoom) => {
+    setRooms(prev => [...prev, newRoom]);
+    setActiveRoom(newRoom);
+    setShowCreateRoomModal(false);
+    navigate(`/chat/${newRoom.id}`);
+  };
+
+  const handleProfileUpdated = async () => {
+    console.log("Profil mis à jour, rafraîchissement des données utilisateur...");
+    await refreshUser?.();
+  };
+
+  // ✅ Fonction pour charger les données de base
+  const fetchInitialData = async () => {
+    if (!isAuthenticated || !user?.id) return;
+    
+    setLoadingData(true);
+    try {
+      console.log("🔄 Chargement des données initiales...");
+      
+      const [usersRes, roomsRes, conversationsRes] = await Promise.all([
+        api.get('/users').catch(err => {
+          console.error("Erreur chargement users:", err);
+          return { data: [] };
+        }),
+        api.get('/rooms').catch(err => {
+          console.error("Erreur chargement rooms:", err);
+          return { data: [] };
+        }),
+        api.get(`/private-messages/conversations/${user.id}`).catch(err => {
+          console.error("Erreur chargement conversations:", err);
+          return { data: [] };
+        })
+      ]);
+
+      setAllUsers(usersRes.data || []);
+      setRooms(roomsRes.data || []);
+      setRecentPrivateConversations(conversationsRes.data || []);
+      setIsInitialLoad(false); // ✅ Marquer la fin du chargement initial
+      
+      console.log("✅ Données initiales chargées avec succès");
+    } catch (error) {
+      console.error("❌ Erreur lors du chargement des données :", error);
+      if (error.response?.status === 401) {
+        handleLogout();
+        return;
+      }
+      setIsInitialLoad(false); // ✅ Même en cas d'erreur, on affiche les sidebars
+    } finally {
+      setLoadingData(false);
     }
   };
 
-  const filteredOnlineUsers = onlineUsers.filter(onlineUser => onlineUser.id !== user?.id);
-  const filteredAllUsers = allUsers.filter(allUser => allUser.id !== user?.id);
-  const filteredRecentPrivateConversations = recentPrivateConversations.filter(conv => conv.contact_id !== user?.id);
-
+  // ✅ Effet principal - se déclenche immédiatement après l'authentification
   useEffect(() => {
-    const handleScroll = (sectionRef, buttonId) => {
-      const section = sectionRef.current;
-      const scrollToTopBtn = document.getElementById(buttonId);
-      if (section && scrollToTopBtn) {
-        scrollToTopBtn.style.display = section.scrollTop > 200 ? 'block' : 'none';
+    if (!authLoading && isAuthenticated && user?.id) {
+      console.log("🚀 Utilisateur authentifié détecté, chargement des données...");
+      fetchInitialData();
+    }
+  }, [authLoading, isAuthenticated, user?.id]);
+
+  // ✅ Configuration des sockets une fois l'utilisateur authentifié
+  useEffect(() => {
+    if (!isAuthenticated || !user?.id) {
+      // ✅ Nettoyer les sockets si pas authentifié
+      socket.off('onlineUsers');
+      socket.off('unreadCount');
+      socket.off('privateMessage');
+      return;
+    }
+
+    console.log("🔌 Configuration des sockets pour user:", user.id);
+    socket.emit('userOnline', user.id);
+
+    const handleOnlineUsers = (users) => {
+      const filtered = users.filter(u => u.id !== user.id);
+      setOnlineUsers(filtered);
+      console.log("👥 Utilisateurs en ligne mis à jour:", filtered.length);
+    };
+
+    const handleUnreadCount = ({ senderId, count }) => {
+      setUnreadMessages(prev => ({ ...prev, [senderId]: count }));
+    };
+
+    const handleNewPrivateMessage = (message) => {
+      setRecentPrivateConversations(prev => {
+        const updated = prev.filter(
+          conv => conv.contact_id !== message.sender_id && conv.contact_id !== message.receiver_id
+        );
+
+        const contactId = message.sender_id === user.id ? message.receiver_id : message.sender_id;
+        const contactUser = allUsers.find(u => u.id === contactId);
+
+        const newConv = {
+          contact_id: contactId,
+          contact_username: contactUser?.username || message.sender_username,
+          profile_image: contactUser?.profile_image || message.sender_profile_image,
+          content: message.content,
+          message_type: message.message_type,
+          created_at: message.created_at,
+        };
+
+        return [newConv, ...updated];
+      });
+
+      const currentChatId = location.pathname.startsWith('/private-chat/')
+        ? parseInt(location.pathname.split('/').pop(), 10)
+        : null;
+
+      if (message.receiver_id === user.id && currentChatId !== message.sender_id) {
+        setUnreadMessages(prev => ({
+          ...prev,
+          [message.sender_id]: (prev[message.sender_id] || 0) + 1
+        }));
       }
     };
 
-    const currentAllUsersSection = allUsersSectionRef.current;
-    const currentMessagesSection = messagesSectionRef.current;
-    const currentOnlineUsersSection = onlineUsersSectionRef.current;
-    const currentRoomsSection = roomsSectionRef.current;
-
-    const handleScrollAllUsers = () => handleScroll(allUsersSectionRef, 'scrollToTopAllUsersBtn');
-    const handleScrollMessages = () => handleScroll(messagesSectionRef, 'scrollToTopMessagesBtn');
-    const handleScrollOnlineUsers = () => handleScroll(onlineUsersSectionRef, 'scrollToTopOnlineUsersBtn');
-    const handleScrollRooms = () => handleScroll(roomsSectionRef, 'scrollToTopRoomsBtn');
-
-    if (currentAllUsersSection) currentAllUsersSection.addEventListener('scroll', handleScrollAllUsers);
-    if (currentMessagesSection) currentMessagesSection.addEventListener('scroll', handleScrollMessages);
-    if (currentOnlineUsersSection) currentOnlineUsersSection.addEventListener('scroll', handleScrollOnlineUsers);
-    if (currentRoomsSection) currentRoomsSection.addEventListener('scroll', handleScrollRooms);
+    socket.on('onlineUsers', handleOnlineUsers);
+    socket.on('unreadCount', handleUnreadCount);
+    socket.on('privateMessage', handleNewPrivateMessage);
 
     return () => {
-      if (currentAllUsersSection) currentAllUsersSection.removeEventListener('scroll', handleScrollAllUsers);
-      if (currentMessagesSection) currentMessagesSection.removeEventListener('scroll', handleScrollMessages);
-      if (currentOnlineUsersSection) currentOnlineUsersSection.removeEventListener('scroll', handleScrollOnlineUsers);
-      if (currentRoomsSection) currentRoomsSection.removeEventListener('scroll', handleScrollRooms);
+      socket.off('onlineUsers', handleOnlineUsers);
+      socket.off('unreadCount', handleUnreadCount);
+      socket.off('privateMessage', handleNewPrivateMessage);
     };
-  }, []);
+  }, [isAuthenticated, user?.id, location.pathname, allUsers]);
 
-  const scrollToTop = (sectionRef) => {
-    if (sectionRef.current) {
-      sectionRef.current.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-  };
+  const filteredRooms = rooms.filter(room =>
+    room.name?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const filteredOnlineUsers = onlineUsers.filter(u =>
+    u.username?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const filteredAllUsers = allUsers.filter(u =>
+    u.username?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const showFullChatLayout = isAuthenticated && (
+    location.pathname.startsWith('/chat/') ||
+    location.pathname.startsWith('/private-chat/') ||
+    location.pathname === '/dashboard' ||
+    location.pathname === '/users' ||
+    location.pathname === '/profile' ||
+    location.pathname === '/admin/create-room'
+  );
+
+  // ✅ Loading uniquement pour l'auth
+  if (authLoading) {
+    return (
+      <div className="main-layout-loading-container">
+        <div className="main-layout-loading-spinner"></div>
+        <p>Authentification en cours...</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="left-sidebar">
-      {/* Profil utilisateur */}
-      <div className="sidebar-header">
-        <div className="user-profile">
-          <div className="user-info">
-            {user?.profileImage ? (
-              <img src={user.profileImage} alt="Profil" className="avatar-circle" />
-            ) : (
-              <div className="avatar-circle">{user?.username?.[0]?.toUpperCase()}</div>
-            )}
-            <div>
-              <h3 className="username">{user?.username}</h3>
-              <p className="online-status">En ligne</p>
-            </div>
-          </div>
-          <div className="icon-buttons">
-            <Link to="/profile" className="icon-button" title="Profil">
-              <Settings className="icon" />
-            </Link>
-            <button onClick={handleLogout} className="icon-button" title="Déconnexion">
-              <LogOut className="icon" />
-            </button>
-          </div>
-        </div>
+    <div className="main-layout-container">
+      {/* ✅ Afficher les sidebars dès que l'utilisateur est authentifié */}
+      {showFullChatLayout && (
+        <LeftSidebar
+          user={user}
+          handleLogout={handleLogout}
+          allUsers={filteredAllUsers}
+          onlineUsers={filteredOnlineUsers}
+          recentPrivateConversations={recentPrivateConversations}
+          unreadMessages={unreadMessages}
+          searchTerm={searchTerm}
+          setSearchTerm={setSearchTerm}
+          rooms={filteredRooms}
+          activeRoom={activeRoom}
+          setActiveRoom={setActiveRoom}
+          onOpenCreateRoom={() => setShowCreateRoomModal(true)}
+          loading={loadingData || isInitialLoad} // ✅ Loading pendant le chargement initial
+        />
+      )}
 
-        {/* Barre de recherche */}
-        <div className="search-container">
-          <Search className="search-icon" />
-          <input
-            type="text"
-            placeholder="Rechercher une salle..."
-            className="search-input"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
-      </div>
-
-      {/* Utilisateurs en ligne */}
-      <div className="online-users-section sidebar-section" ref={onlineUsersSectionRef}>
-        <h4 className="section-title">En ligne ({filteredOnlineUsers.length})</h4>
-        <div className="online-users-list">
-          {filteredOnlineUsers.length === 0 ? (
-            <p className="no-users-message">Aucun autre utilisateur en ligne.</p>
-          ) : (
-            filteredOnlineUsers.map((onlineUser) => (
-              <Link to={`/private-chat/${onlineUser.id}`} key={onlineUser.id} className="online-user-item">
-                <div className="online-user-avatar">
-                  {onlineUser.profileImage ? (
-                    <img src={onlineUser.profileImage} alt="avatar" className="online-avatar" />
-                  ) : (
-                    <div className="online-avatar-initial">{onlineUser.username?.[0]?.toUpperCase()}</div>
-                  )}
-                  <span className="online-indicator"></span>
-                </div>
-                <span className="online-username">{onlineUser.username}</span>
-              </Link>
-            ))
-          )}
-        </div>
-        <button
-          id="scrollToTopOnlineUsersBtn"
-          className="scroll-to-top-btn"
-          onClick={() => scrollToTop(onlineUsersSectionRef)}
-          title="Retour en haut"
-        >
-          <ArrowUp className="lucide-arrow-up" />
-        </button>
-      </div>
-
-      {/* Messages récents */}
-      <div className="sidebar-section" ref={messagesSectionRef}>
-        <h4 className="section-title">Messages</h4>
-        {filteredRecentPrivateConversations.length === 0 ? (
-          <p className="no-users-message">Aucune conversation récente.</p>
-        ) : (
-          <ul className="sidebar-messages">
-            {filteredRecentPrivateConversations.map((conv, index) => {
-              const contactId = conv?.contact_id || `unknown-${index}`;
-              const contactName = conv?.contact_username || 'Utilisateur inconnu';
-              const lastMessage = conv?.content || conv?.last_message || '';
-              const messageTime = conv?.created_at || conv?.timestamp || conv?.last_message_time;
-              const isUnread = unreadMessages[contactId] > 0;
-              const unreadCount = unreadMessages[contactId] || 0;
-              const safeKey = `conv-${contactId}-${index}`;
-
-              return (
-                <li key={safeKey} className={`message-item ${isUnread ? 'unread' : ''}`}>
-                  <Link to={`/private-chat/${contactId}`} className="message-link">
-                    <div className="message-avatar">
-                      {conv?.profile_image ? (
-                        <img src={conv.profile_image} alt="avatar" className="avatar-img" />
-                      ) : (
-                        <div className="avatar-initial">
-                          {contactName?.[0]?.toUpperCase() || '?'}
-                        </div>
-                      )}
-                    </div>
-                    <div className="message-content">
-                      <div className="message-header">
-                        <strong className="contact-name">{contactName}</strong>
-                        <span className="message-time">{formatMessageTime(messageTime)}</span>
-                      </div>
-                      <div className="message-footer">
-                        <p className="last-message">
-                          {lastMessage?.startsWith('http') ? (
-                            lastMessage.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
-                              <img
-                                src={lastMessage}
-                                alt="Image"
-                                style={{
-                                  width: '40px',
-                                  height: '40px',
-                                  borderRadius: '4px',
-                                  objectFit: 'cover',
-                                }}
-                              />
-                            ) : (
-                              <>
-                                📎{' '}
-                                <a href={lastMessage} target="_blank" rel="noopener noreferrer" style={{ color: '#007bff' }}>
-                                  Voir le fichier
-                                </a>
-                              </>
-                            )
-                          ) : (
-                            lastMessage.length > 30
-                              ? lastMessage.slice(0, 30) + '...'
-                              : lastMessage || 'Aucun message'
-                          )}
-                        </p>
-                        {isUnread && <span className="unread-badge">{unreadCount}</span>}
-                      </div>
-                    </div>
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
+      <div className="main-content-area">
+        {!isAuthenticated && (
+          <nav className="auth-nav">
+            <Link to="/" className="auth-nav-link">Accueil</Link>
+            <Link to="/register" className="auth-nav-link">S'inscrire</Link>
+            <Link to="/login" className="auth-nav-link">Se connecter</Link>
+          </nav>
         )}
-        <button
-          id="scrollToTopMessagesBtn"
-          className="scroll-to-top-btn"
-          onClick={() => scrollToTop(messagesSectionRef)}
-          title="Retour en haut"
-        >
-          <ArrowUp className="lucide-arrow-up" />
-        </button>
+
+        <Routes>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/dashboard" element={
+            <ProtectedRoute>
+              <Dashboard 
+                rooms={rooms} 
+                allUsers={allUsers} 
+                onlineUsers={onlineUsers}
+                loading={loadingData || isInitialLoad}
+              />
+            </ProtectedRoute>
+          } />
+          <Route path="/chat/:roomId" element={<ProtectedRoute><ChatRoom /></ProtectedRoute>} />
+          <Route path="/profile" element={<ProtectedRoute><ProfilePage onProfileUpdated={handleProfileUpdated} /></ProtectedRoute>} />
+          <Route path="/users" element={<ProtectedRoute><UserList /></ProtectedRoute>} />
+          <Route path="/private-chat/:userId" element={<ProtectedRoute><PrivateChat /></ProtectedRoute>} />
+          <Route path="/admin/create-room" element={<ProtectedRoute requiredRole="admin"><AdminCreateRoom /></ProtectedRoute>} />
+          <Route path="*" element={isAuthenticated ? <ProtectedRoute><Dashboard /></ProtectedRoute> : <HomePage />} />
+        </Routes>
       </div>
 
-      {/* Tous les utilisateurs */}
-      <div className="all-users-section sidebar-section" ref={allUsersSectionRef}>
-        <h4 className="section-title">Tous les utilisateurs ({filteredAllUsers.length})</h4>
-        <div className="all-users-list">
-          {filteredAllUsers.length === 0 ? (
-            <p className="no-users-message">Aucun autre utilisateur enregistré.</p>
-          ) : (
-            filteredAllUsers.map((allUser) => (
-              <Link to={`/private-chat/${allUser.id}`} key={allUser.id} className="all-user-item">
-                <div className="all-user-avatar">{allUser.username?.[0]?.toUpperCase()}</div>
-                <div className="all-user-info">
-                  <h5 className="all-user-name">{allUser.username}</h5>
-                </div>
-              </Link>
-            ))
-          )}
-        </div>
-        <button
-          id="scrollToTopAllUsersBtn"
-          className="scroll-to-top-btn"
-          onClick={() => scrollToTop(allUsersSectionRef)}
-          title="Retour en haut"
-        >
-          <ArrowUp className="lucide-arrow-up" />
-        </button>
-      </div>
+      {/* ✅ Afficher le panneau droit dès que l'utilisateur est authentifié */}
+      {showFullChatLayout && (
+        <RightInfoPanel 
+          user={user}
+          allUsers={allUsers}
+          rooms={rooms}
+          activeRoom={activeRoom}
+          loading={loadingData || isInitialLoad} // ✅ Loading pendant le chargement initial
+        />
+      )}
 
-      {/* Liste des salles */}
-      <div className="rooms-list-section sidebar-section" ref={roomsSectionRef}>
-        <div className="rooms-list-content">
-          <h4 className="section-title">
-            Salles de discussion
-            <button
-              onClick={onOpenCreateRoom}
-              className="create-room-button"
-              title="Créer une nouvelle salle"
-              style={{
-                marginLeft: '10px',
-                padding: '2px 8px',
-                fontSize: '14px',
-                cursor: 'pointer',
-                borderRadius: '4px',
-                border: 'none',
-                backgroundColor: '#4CAF50',
-                color: 'white',
-                verticalAlign: 'middle',
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <Plus size={16} />
-            </button>
-          </h4>
-          <div className="rooms-list-scrollable">
-            {rooms.length === 0 ? (
-              <p className="no-rooms-message">Aucune salle trouvée.</p>
-            ) : (
-              rooms.map((room) => (
-                <Link
-                  to={`/chat/${room.id}`}
-                  key={room.id}
-                  onClick={() => setActiveRoom?.(room)}
-                  className={`room-item ${activeRoom?.id === room.id ? 'active' : ''}`}
-                >
-                  <div className="room-avatar">{room.name?.[0]?.toUpperCase()}</div>
-                  <div className="room-info">
-                    <div className="room-name-container">
-                      <h5 className="room-name">{room.name}</h5>
-                      {room.is_private && <span className="room-private-icon">🔒</span>}
-                    </div>
-                    <p className="room-description">{room.description || 'Pas de description.'}</p>
-                  </div>
-                </Link>
-              ))
-            )}
-          </div>
-        </div>
-        <button
-          id="scrollToTopRoomsBtn"
-          className="scroll-to-top-btn"
-          onClick={() => scrollToTop(roomsSectionRef)}
-          title="Retour en haut"
-        >
-          <ArrowUp className="lucide-arrow-up" />
-        </button>
-      </div>
-
-      {/* Navigation bas */}
-      <div className="sidebar-nav-icons">
-        <Link to="/dashboard" className={`nav-icon-link ${isActive('/dashboard') ? 'active' : ''}`} title="Tableau de bord">
-          <MessageCircle className="icon" />
-        </Link>
-        <Link to="/users" className={`nav-icon-link ${isActive('/users') ? 'active' : ''}`} title="Utilisateurs">
-          <Users className="icon" />
-        </Link>
-      </div>
+      {showCreateRoomModal && (
+        <CreateRoomModal
+          onClose={() => setShowCreateRoomModal(false)}
+          onRoomCreated={handleRoomCreated}
+        />
+      )}
     </div>
   );
 }
 
-export default LeftSidebar;
+export default MainLayout;

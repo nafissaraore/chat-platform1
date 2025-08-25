@@ -42,12 +42,6 @@ function LeftSidebar({
   const filteredAllUsers = allUsers.filter(allUser => allUser.id !== user?.id);
   const filteredRecentPrivateConversations = recentPrivateConversations.filter(conv => conv.contact_id !== user?.id);
 
-  // ✅ Fonction pour obtenir l'URL de la photo de profil
-  const getUserProfileImage = (userData) => {
-    // Vérifier différents noms de champs possibles
-    return userData?.photo_url || userData?.profileImage || userData?.profile_image || null;
-  };
-
   useEffect(() => {
     const handleScroll = (sectionRef, buttonId) => {
       const section = sectionRef.current;
@@ -92,8 +86,8 @@ function LeftSidebar({
       <div className="sidebar-header">
         <div className="user-profile">
           <div className="user-info">
-            {getUserProfileImage(user) ? (
-              <img src={getUserProfileImage(user)} alt="Profil" className="avatar-circle" />
+            {user?.profileImage ? (
+              <img src={user.profileImage} alt="Profil" className="avatar-circle" />
             ) : (
               <div className="avatar-circle">{user?.username?.[0]?.toUpperCase()}</div>
             )}
@@ -135,8 +129,8 @@ function LeftSidebar({
             filteredOnlineUsers.map((onlineUser) => (
               <Link to={`/private-chat/${onlineUser.id}`} key={onlineUser.id} className="online-user-item">
                 <div className="online-user-avatar">
-                  {getUserProfileImage(onlineUser) ? (
-                    <img src={getUserProfileImage(onlineUser)} alt="avatar" className="online-avatar" />
+                  {onlineUser.profileImage ? (
+                    <img src={onlineUser.profileImage} alt="avatar" className="online-avatar" />
                   ) : (
                     <div className="online-avatar-initial">{onlineUser.username?.[0]?.toUpperCase()}</div>
                   )}
@@ -246,13 +240,7 @@ function LeftSidebar({
           ) : (
             filteredAllUsers.map((allUser) => (
               <Link to={`/private-chat/${allUser.id}`} key={allUser.id} className="all-user-item">
-                <div className="all-user-avatar">
-                  {getUserProfileImage(allUser) ? (
-                    <img src={getUserProfileImage(allUser)} alt="avatar" className="all-user-avatar-img" />
-                  ) : (
-                    <div className="all-user-avatar-initial">{allUser.username?.[0]?.toUpperCase()}</div>
-                  )}
-                </div>
+                <div className="all-user-avatar">{allUser.username?.[0]?.toUpperCase()}</div>
                 <div className="all-user-info">
                   <h5 className="all-user-name">{allUser.username}</h5>
                 </div>
