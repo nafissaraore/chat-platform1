@@ -38,6 +38,11 @@ function LeftSidebar({
     }
   };
 
+  // Fonction pour obtenir l'URL de la photo de profil
+  const getUserProfileImage = (userObj) => {
+    return userObj?.photo_url || userObj?.profileImage || null;
+  };
+
   const filteredOnlineUsers = onlineUsers.filter(onlineUser => onlineUser.id !== user?.id);
   const filteredAllUsers = allUsers.filter(allUser => allUser.id !== user?.id);
   const filteredRecentPrivateConversations = recentPrivateConversations.filter(conv => conv.contact_id !== user?.id);
@@ -86,8 +91,8 @@ function LeftSidebar({
       <div className="sidebar-header">
         <div className="user-profile">
           <div className="user-info">
-            {user?.profileImage ? (
-              <img src={user.profileImage} alt="Profil" className="avatar-circle" />
+            {getUserProfileImage(user) ? (
+              <img src={getUserProfileImage(user)} alt="Profil" className="avatar-circle" />
             ) : (
               <div className="avatar-circle">{user?.username?.[0]?.toUpperCase()}</div>
             )}
@@ -129,8 +134,8 @@ function LeftSidebar({
             filteredOnlineUsers.map((onlineUser) => (
               <Link to={`/private-chat/${onlineUser.id}`} key={onlineUser.id} className="online-user-item">
                 <div className="online-user-avatar">
-                  {onlineUser.profileImage ? (
-                    <img src={onlineUser.profileImage} alt="avatar" className="online-avatar" />
+                  {getUserProfileImage(onlineUser) ? (
+                    <img src={getUserProfileImage(onlineUser)} alt="avatar" className="online-avatar" />
                   ) : (
                     <div className="online-avatar-initial">{onlineUser.username?.[0]?.toUpperCase()}</div>
                   )}
@@ -166,13 +171,14 @@ function LeftSidebar({
               const isUnread = unreadMessages[contactId] > 0;
               const unreadCount = unreadMessages[contactId] || 0;
               const safeKey = `conv-${contactId}-${index}`;
+              const profileImageUrl = conv?.profile_image || conv?.photo_url;
 
               return (
                 <li key={safeKey} className={`message-item ${isUnread ? 'unread' : ''}`}>
                   <Link to={`/private-chat/${contactId}`} className="message-link">
                     <div className="message-avatar">
-                      {conv?.profile_image ? (
-                        <img src={conv.profile_image} alt="avatar" className="avatar-img" />
+                      {profileImageUrl ? (
+                        <img src={profileImageUrl} alt="avatar" className="avatar-img" />
                       ) : (
                         <div className="avatar-initial">
                           {contactName?.[0]?.toUpperCase() || '?'}
@@ -240,7 +246,18 @@ function LeftSidebar({
           ) : (
             filteredAllUsers.map((allUser) => (
               <Link to={`/private-chat/${allUser.id}`} key={allUser.id} className="all-user-item">
-                <div className="all-user-avatar">{allUser.username?.[0]?.toUpperCase()}</div>
+                <div className="all-user-avatar">
+                  {getUserProfileImage(allUser) ? (
+                    <img src={getUserProfileImage(allUser)} alt="avatar" className="avatar-img" style={{
+                      width: '40px',
+                      height: '40px',
+                      borderRadius: '50%',
+                      objectFit: 'cover'
+                    }} />
+                  ) : (
+                    <div>{allUser.username?.[0]?.toUpperCase()}</div>
+                  )}
+                </div>
                 <div className="all-user-info">
                   <h5 className="all-user-name">{allUser.username}</h5>
                 </div>

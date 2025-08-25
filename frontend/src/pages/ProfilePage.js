@@ -1,4 +1,4 @@
-// pages/ProfilePage.js (version stylisée)
+// pages/ProfilePage.js (version corrigée)
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../utils/api';
@@ -7,7 +7,7 @@ import './ProfileEditPage.css';
 
 function ProfilePage({ onProfileUpdated }) {
   const navigate = useNavigate();
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, refreshUser } = useAuth(); // Ajout de refreshUser si disponible
   const [profileData, setProfileData] = useState({
     username: '',
     email: '',
@@ -33,7 +33,8 @@ function ProfilePage({ onProfileUpdated }) {
         gender: user.gender || '',
         interests: user.interests || '',
         intention: user.intention || '',
-        photo_url: user.photo_url || '',
+        // Utiliser photo_url OU profileImage selon ce qui est disponible
+        photo_url: user.photo_url || user.profileImage || '',
         location: user.location || '',
       });
       setLoading(false);
@@ -100,15 +101,16 @@ function ProfilePage({ onProfileUpdated }) {
       }
 
       // 2. Mettre à jour le profil avec les données du formulaire et la nouvelle URL de photo
-      console.log('Mise à jour du profil avec:', {
+      const updateData = {
         ...profileData,
-        photo_url: finalPhotoUrl
-      });
+        photo_url: finalPhotoUrl,
+        // Également mettre à jour profileImage pour la cohérence
+        profileImage: finalPhotoUrl
+      };
 
-      const updateResponse = await api.put(`/profile/${user.id}`, {
-        ...profileData,
-        photo_url: finalPhotoUrl
-      }, {
+      console.log('Mise à jour du profil avec:', updateData);
+
+      const updateResponse = await api.put(`/profile/${user.id}`, updateData, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -132,6 +134,11 @@ function ProfilePage({ onProfileUpdated }) {
           setPreviewUrl(null);
         }
         setSelectedFile(null);
+
+        // Forcer la mise à jour des données utilisateur dans le contexte Auth
+        if (refreshUser) {
+          await refreshUser();
+        }
 
         // Appeler la fonction de rafraîchissement
         if (onProfileUpdated) {
