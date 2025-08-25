@@ -36,21 +36,10 @@ function MainLayout() {
   const [unreadMessages, setUnreadMessages] = useState({});
   const [showCreateRoomModal, setShowCreateRoomModal] = useState(false);
   const [activeRoom, setActiveRoom] = useState(null);
-  
-  // ✅ Reset dataLoaded quand l'utilisateur change (après inscription/connexion)
-  const [dataLoaded, setDataLoaded] = useState(false);
-  const [previousUserId, setPreviousUserId] = useState(null);
 
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
-    // Reset des états lors de la déconnexion
-    setAllUsers([]);
-    setOnlineUsers([]);
-    setRooms([]);
-    setRecentPrivateConversations([]);
-    setDataLoaded(false);
-    setPreviousUserId(null);
     window.location.href = '/login';
   };
 
@@ -67,13 +56,13 @@ function MainLayout() {
   };
 
   // ✅ Fonction pour charger les données de base
-  const fetchInitialData = async (forceReload = false) => {
+  const fetchInitialData = async () => {
     if (!isAuthenticated || !user?.id) return;
-    
+
     setLoadingData(true);
     try {
-      console.log("🔄 Chargement des données initiales...", forceReload ? "(force reload)" : "");
-      
+      console.log("🔄 Chargement des données initiales...");
+
       const [usersRes, roomsRes, conversationsRes] = await Promise.all([
         api.get('/users').catch(err => {
           console.error("Erreur chargement users:", err);
@@ -92,9 +81,7 @@ function MainLayout() {
       setAllUsers(usersRes.data || []);
       setRooms(roomsRes.data || []);
       setRecentPrivateConversations(conversationsRes.data || []);
-      setDataLoaded(true);
-      setPreviousUserId(user.id);
-      
+
       console.log("✅ Données initiales chargées avec succès");
     } catch (error) {
       console.error("❌ Erreur lors du chargement des données :", error);
@@ -102,48 +89,21 @@ function MainLayout() {
         handleLogout();
         return;
       }
-      // Même en cas d'erreur, on affiche les sidebars
-      setDataLoaded(true);
-      setPreviousUserId(user.id);
     } finally {
       setLoadingData(false);
     }
   };
 
-  // ✅ Détection du changement d'utilisateur (inscription/connexion)
-  useEffect(() => {
-    if (user?.id && user.id !== previousUserId) {
-      console.log("🔄 Nouvel utilisateur détecté, reset et rechargement des données");
-      setDataLoaded(false);
-      setAllUsers([]);
-      setOnlineUsers([]);
-      setRooms([]);
-      setRecentPrivateConversations([]);
-      setUnreadMessages({});
-    }
-  }, [user?.id, previousUserId]);
-
   // ✅ Effet pour charger les données dès que l'utilisateur est authentifié
   useEffect(() => {
-    if (!authLoading && isAuthenticated && user?.id && !dataLoaded) {
-      fetchInitialData();
+    if (!authLoading && isAuthenticated && user?.id) {
+      fetchInitialData(); // 🔥 toujours relancé quand user change
     }
-  }, [authLoading, isAuthenticated, user?.id, dataLoaded]);
+  }, [authLoading, isAuthenticated, user?.id]);
 
-  // ✅ Effet pour rafraîchir les données après inscription/connexion
+  // ✅ Configuration des sockets une fois les données chargées
   useEffect(() => {
-    // Si l'utilisateur vient de s'inscrire/connecter et arrive sur une page protégée
-    if (isAuthenticated && user?.id && 
-        (location.pathname === '/dashboard' || location.pathname.startsWith('/chat/')) &&
-        !dataLoaded && !loadingData) {
-      console.log("🔄 Chargement automatique des données après connexion");
-      fetchInitialData(true);
-    }
-  }, [location.pathname, isAuthenticated, user?.id, dataLoaded, loadingData]);
-
-  // ✅ Configuration des sockets une fois les données de base chargées
-  useEffect(() => {
-    if (!user?.id || !dataLoaded) return;
+    if (!user?.id) return;
 
     console.log("🔌 Configuration des sockets pour user:", user.id);
     socket.emit('userOnline', user.id);
@@ -200,7 +160,7 @@ function MainLayout() {
       socket.off('unreadCount', handleUnreadCount);
       socket.off('privateMessage', handleNewPrivateMessage);
     };
-  }, [user?.id, dataLoaded, location.pathname, allUsers]);
+  }, [user?.id, location.pathname, allUsers]);
 
   const filteredRooms = rooms.filter(room =>
     room.name?.toLowerCase().includes(searchTerm.toLowerCase())
@@ -223,7 +183,6 @@ function MainLayout() {
     location.pathname === '/admin/create-room'
   );
 
-  // ✅ Loading uniquement pour l'auth, pas pour les données
   if (authLoading) {
     return (
       <div className="main-layout-loading-container">
@@ -235,7 +194,6 @@ function MainLayout() {
 
   return (
     <div className="main-layout-container">
-      {/* ✅ Afficher les sidebars dès que l'utilisateur est authentifié */}
       {showFullChatLayout && (
         <LeftSidebar
           user={user}
@@ -274,7 +232,6 @@ function MainLayout() {
                 allUsers={allUsers} 
                 onlineUsers={onlineUsers}
                 loading={loadingData}
-                onRefreshData={() => fetchInitialData(true)}
               />
             </ProtectedRoute>
           } />
@@ -287,7 +244,6 @@ function MainLayout() {
         </Routes>
       </div>
 
-      {/* ✅ Afficher le panneau droit dès que l'utilisateur est authentifié */}
       {showFullChatLayout && (
         <RightInfoPanel 
           user={user}
