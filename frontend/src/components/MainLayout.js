@@ -37,12 +37,19 @@ function MainLayout() {
   const [showCreateRoomModal, setShowCreateRoomModal] = useState(false);
   const [activeRoom, setActiveRoom] = useState(null);
   
-  // ✅ États séparés pour un meilleur contrôle
-  const [dataLoaded, setDataLoaded] = useState(false);
+  // ✅ État pour suivre si c'est la première connexion
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
 
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
+    // ✅ Réinitialiser tous les états
+    setAllUsers([]);
+    setOnlineUsers([]);
+    setRooms([]);
+    setRecentPrivateConversations([]);
+    setUnreadMessages({});
+    setIsInitialLoad(true);
     window.location.href = '/login';
   };
 
@@ -84,7 +91,7 @@ function MainLayout() {
       setAllUsers(usersRes.data || []);
       setRooms(roomsRes.data || []);
       setRecentPrivateConversations(conversationsRes.data || []);
-      setDataLoaded(true);
+      setIsInitialLoad(false); // ✅ Marquer la fin du chargement initial
       
       console.log("✅ Données initiales chargées avec succès");
     } catch (error) {
@@ -93,23 +100,29 @@ function MainLayout() {
         handleLogout();
         return;
       }
-      // Même en cas d'erreur, on affiche les sidebars
-      setDataLoaded(true);
+      setIsInitialLoad(false); // ✅ Même en cas d'erreur, on affiche les sidebars
     } finally {
       setLoadingData(false);
     }
   };
 
-  // ✅ Effet pour charger les données dès que l'utilisateur est authentifié
+  // ✅ Effet principal - se déclenche immédiatement après l'authentification
   useEffect(() => {
-    if (!authLoading && isAuthenticated && user?.id && !dataLoaded) {
+    if (!authLoading && isAuthenticated && user?.id) {
+      console.log("🚀 Utilisateur authentifié détecté, chargement des données...");
       fetchInitialData();
     }
-  }, [authLoading, isAuthenticated, user?.id, dataLoaded]);
+  }, [authLoading, isAuthenticated, user?.id]);
 
-  // ✅ Configuration des sockets une fois les données de base chargées
+  // ✅ Configuration des sockets une fois l'utilisateur authentifié
   useEffect(() => {
-    if (!user?.id || !dataLoaded) return;
+    if (!isAuthenticated || !user?.id) {
+      // ✅ Nettoyer les sockets si pas authentifié
+      socket.off('onlineUsers');
+      socket.off('unreadCount');
+      socket.off('privateMessage');
+      return;
+    }
 
     console.log("🔌 Configuration des sockets pour user:", user.id);
     socket.emit('userOnline', user.id);
@@ -166,7 +179,7 @@ function MainLayout() {
       socket.off('unreadCount', handleUnreadCount);
       socket.off('privateMessage', handleNewPrivateMessage);
     };
-  }, [user?.id, dataLoaded, location.pathname, allUsers]);
+  }, [isAuthenticated, user?.id, location.pathname, allUsers]);
 
   const filteredRooms = rooms.filter(room =>
     room.name?.toLowerCase().includes(searchTerm.toLowerCase())
@@ -189,7 +202,7 @@ function MainLayout() {
     location.pathname === '/admin/create-room'
   );
 
-  // ✅ Loading uniquement pour l'auth, pas pour les données
+  // ✅ Loading uniquement pour l'auth
   if (authLoading) {
     return (
       <div className="main-layout-loading-container">
@@ -216,7 +229,7 @@ function MainLayout() {
           activeRoom={activeRoom}
           setActiveRoom={setActiveRoom}
           onOpenCreateRoom={() => setShowCreateRoomModal(true)}
-          loading={loadingData} // ✅ Passer l'état de loading aux sidebars
+          loading={loadingData || isInitialLoad} // ✅ Loading pendant le chargement initial
         />
       )}
 
@@ -239,7 +252,7 @@ function MainLayout() {
                 rooms={rooms} 
                 allUsers={allUsers} 
                 onlineUsers={onlineUsers}
-                loading={loadingData}
+                loading={loadingData || isInitialLoad}
               />
             </ProtectedRoute>
           } />
@@ -259,7 +272,7 @@ function MainLayout() {
           allUsers={allUsers}
           rooms={rooms}
           activeRoom={activeRoom}
-          loading={loadingData} // ✅ Passer l'état de loading
+          loading={loadingData || isInitialLoad} // ✅ Loading pendant le chargement initial
         />
       )}
 

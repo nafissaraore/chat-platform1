@@ -24,8 +24,12 @@ function Login() {
 
             console.log("✅ Connexion réussie pour:", response.data.user.username);
 
-            // ✅ Redirection immédiate sans délai
-            navigate('/dashboard', { replace: true });
+            // ✅ Forcer un rechargement de la page pour déclencher useAuth
+            window.location.href = '/dashboard';
+            
+            // Alternative sans rechargement (si vous préférez) :
+            // navigate('/dashboard', { replace: true });
+            // window.dispatchEvent(new Event('storage')); // Déclenche les listeners de localStorage
             
         } catch (err) {
             console.error('❌ Erreur de connexion:', err);
