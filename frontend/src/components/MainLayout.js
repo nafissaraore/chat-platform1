@@ -36,6 +36,9 @@ function MainLayout() {
   const [unreadMessages, setUnreadMessages] = useState({});
   const [showCreateRoomModal, setShowCreateRoomModal] = useState(false);
   const [activeRoom, setActiveRoom] = useState(null);
+  
+  // ✅ États séparés pour un meilleur contrôle
+  const [dataLoaded, setDataLoaded] = useState(false);
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -58,11 +61,11 @@ function MainLayout() {
   // ✅ Fonction pour charger les données de base
   const fetchInitialData = async () => {
     if (!isAuthenticated || !user?.id) return;
-
+    
     setLoadingData(true);
     try {
       console.log("🔄 Chargement des données initiales...");
-
+      
       const [usersRes, roomsRes, conversationsRes] = await Promise.all([
         api.get('/users').catch(err => {
           console.error("Erreur chargement users:", err);
@@ -81,7 +84,8 @@ function MainLayout() {
       setAllUsers(usersRes.data || []);
       setRooms(roomsRes.data || []);
       setRecentPrivateConversations(conversationsRes.data || []);
-
+      setDataLoaded(true);
+      
       console.log("✅ Données initiales chargées avec succès");
     } catch (error) {
       console.error("❌ Erreur lors du chargement des données :", error);
@@ -89,6 +93,8 @@ function MainLayout() {
         handleLogout();
         return;
       }
+      // Même en cas d'erreur, on affiche les sidebars
+      setDataLoaded(true);
     } finally {
       setLoadingData(false);
     }
@@ -96,14 +102,14 @@ function MainLayout() {
 
   // ✅ Effet pour charger les données dès que l'utilisateur est authentifié
   useEffect(() => {
-    if (!authLoading && isAuthenticated && user?.id) {
-      fetchInitialData(); // 🔥 toujours relancé quand user change
+    if (!authLoading && isAuthenticated && user?.id && !dataLoaded) {
+      fetchInitialData();
     }
-  }, [authLoading, isAuthenticated, user?.id]);
+  }, [authLoading, isAuthenticated, user?.id, dataLoaded]);
 
-  // ✅ Configuration des sockets une fois les données chargées
+  // ✅ Configuration des sockets une fois les données de base chargées
   useEffect(() => {
-    if (!user?.id) return;
+    if (!user?.id || !dataLoaded) return;
 
     console.log("🔌 Configuration des sockets pour user:", user.id);
     socket.emit('userOnline', user.id);
@@ -160,7 +166,7 @@ function MainLayout() {
       socket.off('unreadCount', handleUnreadCount);
       socket.off('privateMessage', handleNewPrivateMessage);
     };
-  }, [user?.id, location.pathname, allUsers]);
+  }, [user?.id, dataLoaded, location.pathname, allUsers]);
 
   const filteredRooms = rooms.filter(room =>
     room.name?.toLowerCase().includes(searchTerm.toLowerCase())
@@ -183,6 +189,7 @@ function MainLayout() {
     location.pathname === '/admin/create-room'
   );
 
+  // ✅ Loading uniquement pour l'auth, pas pour les données
   if (authLoading) {
     return (
       <div className="main-layout-loading-container">
@@ -194,6 +201,7 @@ function MainLayout() {
 
   return (
     <div className="main-layout-container">
+      {/* ✅ Afficher les sidebars dès que l'utilisateur est authentifié */}
       {showFullChatLayout && (
         <LeftSidebar
           user={user}
@@ -208,7 +216,7 @@ function MainLayout() {
           activeRoom={activeRoom}
           setActiveRoom={setActiveRoom}
           onOpenCreateRoom={() => setShowCreateRoomModal(true)}
-          loading={loadingData}
+          loading={loadingData} // ✅ Passer l'état de loading aux sidebars
         />
       )}
 
@@ -244,13 +252,14 @@ function MainLayout() {
         </Routes>
       </div>
 
+      {/* ✅ Afficher le panneau droit dès que l'utilisateur est authentifié */}
       {showFullChatLayout && (
         <RightInfoPanel 
           user={user}
           allUsers={allUsers}
           rooms={rooms}
           activeRoom={activeRoom}
-          loading={loadingData}
+          loading={loadingData} // ✅ Passer l'état de loading
         />
       )}
 
