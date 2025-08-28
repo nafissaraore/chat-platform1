@@ -1,4 +1,4 @@
-// ProfilePage.js - Version avec support Base64
+// ProfilePage.js - Version corrigée
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../utils/api';
@@ -36,6 +36,56 @@ function ProfilePage({ onProfileUpdated }) {
 
   useEffect(() => {
     if (!authLoading && user) {
+      // Charger les données du profil depuis la base de données
+      loadProfileData();
+    } else if (!authLoading && !user) {
+      navigate('/login');
+    }
+  }, [user, authLoading, navigate]);
+
+  const loadProfileData = async () => {
+    try {
+      setLoading(true);
+      const token = localStorage.getItem('token');
+      
+      if (!token || !user?.id) {
+        setError('Utilisateur non authentifié');
+        return;
+      }
+
+      // Récupérer les données du profil depuis l'API
+      const response = await api.get(`/profile/${user.id}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      if (response.data) {
+        const profile = response.data;
+        setProfileData({
+          username: profile.username || user.username || '',
+          email: profile.email || user.email || '',
+          age: profile.age || '',
+          gender: profile.gender || '',
+          interests: profile.interests || '',
+          intention: profile.intention || '',
+          photo_url: profile.photo_url || profile.profileImage || user.photo_url || user.profileImage || '',
+          location: profile.location || '',
+        });
+      } else {
+        // Si pas de profil existant, utiliser les données de l'utilisateur
+        setProfileData({
+          username: user.username || '',
+          email: user.email || '',
+          age: user.age || '',
+          gender: user.gender || '',
+          interests: user.interests || '',
+          intention: user.intention || '',
+          photo_url: user.photo_url || user.profileImage || '',
+          location: user.location || '',
+        });
+      }
+    } catch (err) {
+      console.error('Erreur lors du chargement du profil:', err);
+      // En cas d'erreur, utiliser les données de l'utilisateur connecté
       setProfileData({
         username: user.username || '',
         email: user.email || '',
@@ -46,11 +96,10 @@ function ProfilePage({ onProfileUpdated }) {
         photo_url: user.photo_url || user.profileImage || '',
         location: user.location || '',
       });
+    } finally {
       setLoading(false);
-    } else if (!authLoading && !user) {
-      navigate('/login');
     }
-  }, [user, authLoading, navigate]);
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -79,8 +128,78 @@ function ProfilePage({ onProfileUpdated }) {
       
       setError(null);
       setSelectedFile(file);
+      
+      // Créer l'aperçu
       const url = URL.createObjectURL(file);
       setPreviewUrl(url);
+      
+      console.log('Fichier sélectionné:', {
+        name: file.name,
+        size: file.size,
+        type: file.type
+      });
+    }
+  };
+
+  const uploadImage = async (file, token) => {
+    try {
+      console.log('Tentative d\'upload multipart...');
+      
+      // Méthode 1: Upload multipart
+      const formData = new FormData();
+      formData.append('profileImage', file);
+      formData.append('userId', user.id.toString());
+
+      const uploadResponse = await api.post('/upload/profile', formData, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          // Ne pas définir Content-Type pour FormData, le navigateur le fera automatiquement
+        },
+        timeout: 30000, // 30 secondes
+      });
+
+      if (uploadResponse.data?.fileUrl || uploadResponse.data?.url) {
+        const imageUrl = uploadResponse.data.fileUrl || uploadResponse.data.url;
+        console.log('Upload multipart réussi:', imageUrl);
+        return imageUrl;
+      } else {
+        throw new Error('Aucune URL retournée par le serveur');
+      }
+    } catch (uploadError) {
+      console.log('Upload multipart échoué:', uploadError.message);
+      
+      try {
+        console.log('Tentative d\'upload en base64...');
+        
+        // Méthode 2: Upload en base64
+        const base64Data = await fileToBase64(file);
+        
+        const base64Response = await api.post('/upload/profile-base64', {
+          imageData: base64Data,
+          userId: user.id,
+          filename: file.name,
+          mimeType: file.type
+        }, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          timeout: 30000,
+        });
+
+        if (base64Response.data?.fileUrl || base64Response.data?.url) {
+          const imageUrl = base64Response.data.fileUrl || base64Response.data.url;
+          console.log('Upload base64 réussi:', imageUrl);
+          return imageUrl;
+        } else {
+          // Méthode 3: Utiliser directement le base64
+          console.log('Utilisation du base64 directement');
+          return base64Data;
+        }
+      } catch (base64Error) {
+        console.error('Upload base64 échoué:', base64Error);
+        throw new Error(`Échec de l'upload: ${uploadError.response?.data?.message || uploadError.message}`);
+      }
     }
   };
 
@@ -100,87 +219,46 @@ function ProfilePage({ onProfileUpdated }) {
     try {
       let finalPhotoUrl = profileData.photo_url;
 
-      // 1. Gérer l'upload de la nouvelle photo
+      // 1. Upload de la nouvelle photo si sélectionnée
       if (selectedFile) {
-        console.log('Traitement de la photo...');
-        
-        try {
-          // Méthode 1: Essayer l'upload multipart
-          const formData = new FormData();
-          formData.append('profileImage', selectedFile);
-          formData.append('userId', user.id.toString());
-
-          const uploadResponse = await api.post('/upload/profile', formData, {
-            headers: {
-              'Authorization': `Bearer ${token}`,
-            },
-          });
-
-          if (uploadResponse.data.fileUrl || uploadResponse.data.url) {
-            finalPhotoUrl = uploadResponse.data.fileUrl || uploadResponse.data.url;
-            console.log('Photo uploadée (multipart):', finalPhotoUrl);
-          } else {
-            throw new Error('Pas d\'URL retournée');
-          }
-        } catch (uploadError) {
-          console.log('Upload multipart échoué, essai en base64...');
-          
-          try {
-            // Méthode 2: Convertir en base64 et envoyer via JSON
-            const base64Data = await fileToBase64(selectedFile);
-            
-            const base64Response = await api.post('/upload/profile-base64', {
-              imageData: base64Data,
-              userId: user.id,
-              filename: selectedFile.name,
-              mimeType: selectedFile.type
-            }, {
-              headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-              }
-            });
-
-            if (base64Response.data.fileUrl || base64Response.data.url) {
-              finalPhotoUrl = base64Response.data.fileUrl || base64Response.data.url;
-              console.log('Photo uploadée (base64):', finalPhotoUrl);
-            } else {
-              // Méthode 3: Utiliser directement le base64
-              finalPhotoUrl = base64Data;
-              console.log('Utilisation du base64 directement');
-            }
-          } catch (base64Error) {
-            console.error('Erreur base64:', base64Error);
-            throw new Error(`Échec de l'upload de l'image: ${uploadError.response?.data?.message || uploadError.message}`);
-          }
-        }
+        console.log('Traitement de la nouvelle photo...');
+        finalPhotoUrl = await uploadImage(selectedFile, token);
       }
 
-      // 2. Mettre à jour le profil
+      // 2. Préparer les données de mise à jour
       const updateData = {
-        ...profileData,
+        username: profileData.username,
+        email: profileData.email,
+        age: profileData.age ? parseInt(profileData.age, 10) : null,
+        gender: profileData.gender,
+        interests: profileData.interests,
+        intention: profileData.intention,
         photo_url: finalPhotoUrl,
-        profileImage: finalPhotoUrl
+        location: profileData.location,
       };
 
-      console.log('Mise à jour du profil...');
+      console.log('Données à envoyer:', updateData);
 
+      // 3. Mettre à jour le profil
       const updateResponse = await api.put(`/profile/${user.id}`, updateData, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
-        }
+        },
+        timeout: 30000,
       });
 
-      if (updateResponse.status === 200) {
+      if (updateResponse.status === 200 || updateResponse.status === 201) {
+        console.log('Profil mis à jour avec succès');
         setSuccessMessage('Profil mis à jour avec succès !');
         
+        // Mettre à jour les données locales
         setProfileData(prevData => ({
           ...prevData,
           photo_url: finalPhotoUrl
         }));
 
-        // Nettoyer
+        // Nettoyer les fichiers temporaires
         if (previewUrl) {
           URL.revokeObjectURL(previewUrl);
           setPreviewUrl(null);
@@ -189,29 +267,53 @@ function ProfilePage({ onProfileUpdated }) {
 
         // Rafraîchir les données utilisateur
         if (refreshUser) {
-          await refreshUser();
+          try {
+            await refreshUser();
+          } catch (refreshError) {
+            console.warn('Erreur lors du rafraîchissement:', refreshError);
+          }
         }
 
         if (onProfileUpdated) {
-          await onProfileUpdated();
+          try {
+            await onProfileUpdated();
+          } catch (callbackError) {
+            console.warn('Erreur callback:', callbackError);
+          }
         }
 
+        // Redirection après succès
         setTimeout(() => {
           navigate('/dashboard');
         }, 2000);
 
       } else {
-        throw new Error('Échec de la mise à jour du profil.');
+        throw new Error(`Erreur du serveur: ${updateResponse.status}`);
       }
 
     } catch (err) {
-      console.error('Erreur:', err);
-      setError(err.message || 'Une erreur est survenue.');
+      console.error('Erreur lors de la mise à jour:', err);
+      
+      let errorMessage = 'Une erreur est survenue lors de la mise à jour.';
+      
+      if (err.response) {
+        // Erreur de réponse du serveur
+        errorMessage = err.response.data?.message || `Erreur ${err.response.status}: ${err.response.statusText}`;
+      } else if (err.request) {
+        // Erreur de réseau
+        errorMessage = 'Erreur de connexion. Vérifiez votre connexion internet.';
+      } else {
+        // Autre erreur
+        errorMessage = err.message || errorMessage;
+      }
+      
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
   };
 
+  // Nettoyage des URLs temporaires
   useEffect(() => {
     return () => {
       if (previewUrl) {
@@ -221,17 +323,33 @@ function ProfilePage({ onProfileUpdated }) {
   }, [previewUrl]);
 
   if (loading || authLoading) {
-    return <div className="profile-edit-container loading">Chargement du profil...</div>;
-  }
-
-  if (error && !profileData.username) {
-    return <div className="profile-edit-container error">Erreur: {error}</div>;
+    return (
+      <div className="profile-edit-container loading">
+        <div className="text-center">
+          <div className="loading-spinner"></div>
+          <p>Chargement du profil...</p>
+        </div>
+      </div>
+    );
   }
 
   return (
     <div className="profile-edit-container">
       <div className="profile-edit-card">
         <h2>Modifier le profil</h2>
+        
+        {error && (
+          <div className="error-message" style={{ marginBottom: '20px' }}>
+            {error}
+          </div>
+        )}
+        
+        {successMessage && (
+          <div className="success-message" style={{ marginBottom: '20px' }}>
+            {successMessage}
+          </div>
+        )}
+
         <form className="profile-edit-form" onSubmit={handleSubmit}>
           
           <div className="form-group">
@@ -240,38 +358,60 @@ function ProfilePage({ onProfileUpdated }) {
               type="file"
               id="profileImage"
               name="profileImage"
-              accept="image/*"
+              accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
               onChange={handleFileChange}
+              disabled={loading}
             />
             
+            {/* Photo actuelle */}
             {profileData.photo_url && !previewUrl && (
-              <div className="image-preview-container">
-                <p>Photo actuelle</p>
+              <div className="image-preview-container" style={{ marginTop: '10px' }}>
+                <p><strong>Photo actuelle :</strong></p>
                 <img 
                   src={profileData.photo_url} 
                   alt="Photo de profil actuelle" 
                   className="profile-image-preview"
-                  style={{ maxWidth: '150px', maxHeight: '150px', borderRadius: '8px' }}
+                  style={{ 
+                    maxWidth: '150px', 
+                    maxHeight: '150px', 
+                    borderRadius: '8px',
+                    border: '2px solid #ddd',
+                    objectFit: 'cover'
+                  }}
+                  onError={(e) => {
+                    console.error('Erreur de chargement de l\'image actuelle');
+                    e.target.style.display = 'none';
+                  }}
                 />
               </div>
             )}
             
+            {/* Aperçu de la nouvelle photo */}
             {previewUrl && (
-              <div className="image-preview-container">
-                <p>Nouvelle photo sélectionnée</p>
+              <div className="image-preview-container" style={{ marginTop: '10px' }}>
+                <p><strong>Nouvelle photo sélectionnée :</strong></p>
                 <img 
                   src={previewUrl} 
-                  alt="profile" 
+                  alt="Aperçu" 
                   className="profile-image-preview"
-                  style={{ maxWidth: '150px', maxHeight: '150px', borderRadius: '8px' }}
+                  style={{ 
+                    maxWidth: '150px', 
+                    maxHeight: '150px', 
+                    borderRadius: '8px',
+                    border: '2px solid #4CAF50',
+                    objectFit: 'cover'
+                  }}
                 />
+                <div style={{ marginTop: '5px' }}>
+                  <small>Fichier: {selectedFile?.name} ({(selectedFile?.size / 1024).toFixed(1)} KB)</small>
+                </div>
               </div>
             )}
           </div>
 
           <div className="form-row">
             <div className="form-group">
-              <label htmlFor="username">Nom d'utilisateur</label>
+              <label htmlFor="username">Nom d'utilisateur *</label>
               <input
                 type="text"
                 id="username"
@@ -280,10 +420,11 @@ function ProfilePage({ onProfileUpdated }) {
                 onChange={handleChange}
                 placeholder="Votre nom d'utilisateur"
                 required
+                disabled={loading}
               />
             </div>
             <div className="form-group">
-              <label htmlFor="email">Email</label>
+              <label htmlFor="email">Email *</label>
               <input
                 type="email"
                 id="email"
@@ -292,6 +433,7 @@ function ProfilePage({ onProfileUpdated }) {
                 onChange={handleChange}
                 placeholder="votre@email.com"
                 required
+                disabled={loading}
               />
             </div>
           </div>
@@ -308,6 +450,7 @@ function ProfilePage({ onProfileUpdated }) {
                 placeholder="25"
                 min="18"
                 max="100"
+                disabled={loading}
               />
             </div>
             <div className="form-group">
@@ -319,6 +462,7 @@ function ProfilePage({ onProfileUpdated }) {
                 value={profileData.gender}
                 onChange={handleChange}
                 placeholder="Homme, Femme, Autre..."
+                disabled={loading}
               />
             </div>
           </div>
@@ -332,6 +476,7 @@ function ProfilePage({ onProfileUpdated }) {
               value={profileData.location}
               onChange={handleChange}
               placeholder="Paris, France"
+              disabled={loading}
             />
           </div>
 
@@ -344,6 +489,7 @@ function ProfilePage({ onProfileUpdated }) {
               value={profileData.intention}
               onChange={handleChange}
               placeholder="Relation sérieuse, Amitié, Casual..."
+              disabled={loading}
             />
           </div>
 
@@ -355,6 +501,8 @@ function ProfilePage({ onProfileUpdated }) {
               value={profileData.interests}
               onChange={handleChange}
               placeholder="Parlez-nous de vos passions, hobbies, centres d'intérêt..."
+              disabled={loading}
+              rows={4}
             />
           </div>
 
@@ -363,11 +511,8 @@ function ProfilePage({ onProfileUpdated }) {
             className={`save-profile-btn ${loading ? 'loading' : ''}`}
             disabled={loading}
           >
-            {loading ? 'Enregistrement...' : 'Enregistrer les modifications'}
+            {loading ? 'Enregistrement en cours...' : 'Enregistrer les modifications'}
           </button>
-          
-          {successMessage && <div className="success-message">{successMessage}</div>}
-          {error && <div className="error-message">{error}</div>}
         </form>
       </div>
     </div>
